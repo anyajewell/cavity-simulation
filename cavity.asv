@@ -1,37 +1,23 @@
+clc; clear all;
+
+%%
+
 % --- SETUP --- %
 
 % Constants
-
 c = 3*10^8; % speed of light, [m/s]
 eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-
 L = 1; % length of cavity, [m]
 D1 = 0.0254; % diameter of mirror 1, [m]
 D2 = D1; % diameter of mirror 2, [m]
 Rc1 = 3; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
-N = 1000; % number of mesh points along each dim of mesh grid
+N = 128; % number of mesh points along each dim of mesh grid
 lambda = 780e-9; % laser wavelength, [m]
 W = 5e-2; % domain half width, [m]
 CFL = 0.0625;
-
-% Derived parameters
-
-k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
-D = 1i/(2*k0); % diffraction operator
-mmask_R = (X.^2 + Y.^2 <= (D1/2)^2); % mirror 1 mask (RHS)
-mmask_L = (X.^2 + Y.^2 <= (D2/2)^2); % mirror 2 mask (LHS)
-
-% Set up mirror physical parameters for plotting
-r1 = D1/2; % radius of mirror 1
-r2 = D2/2; % radius of mirror 2
-theta = linspace(0,2*pi,400);
-x_circ1 = r1*cos(theta);
-y_circ1 = r1*sin(theta);
-x_circ2 = r2*cos(theta);
-y_circ2 = r2*sin(theta);
 
 % Grid
 x = linspace(-W,W,N);
@@ -42,26 +28,26 @@ dy = dx;
 dz = L; % make each step a trip across the cavity
 [X,Y] = meshgrid(x,y); % space domain
 
+% Derived parameters
+k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
+D = 1i/(2*k0); % diffraction operator
+cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
+cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
+
+% Set up mirror physical parameters for plotting
+r1 = D1/2; % radius of mirror 1
+r2 = D2/2; % radius of mirror 2
+theta = linspace(0,2*pi,400);
+x_circ1 = r1*cos(theta);
+y_circ1 = r1*sin(theta);
+x_circ2 = r2*cos(theta);
+y_circ2 = r2*sin(theta);
+
 % Input beam
 w0 = 0.01; % input beam radius, [m]
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
-
+E = E0;
 I0 = 0.5*eps0*c*abs(E0).^2;
-
-% --- SIMULATION --- %
-
-fig = figure; 
-subplot(1,2,1)
-s=surf(X, Y, I0, 'LineStyle','none', 'DisplayName', '_nolegend_');
-set(get(get(s,'Annotation'),'LegendInformation'), 'IconDisplayStyle','off');
-hold on;
-plot3(x_circ1, y_circ1, zeros(size(x_circ1)), 'r-', 'LineWidth', 2, 'DisplayName', 'Mirror 1'); % circle at z=0
-hold off;
-title('Laser Mode at z = 0 m')
-zlabel('Intensity')
-xlabel('X [m]')
-ylabel('Y [m]')
-legend()
 
 % Stability
 g1 = 1 - L/Rc1; % stability parameter 1
@@ -71,37 +57,46 @@ g = g1*g2; % stability product, 0 < g < 1 for a stable cavity
 % Set up frequency space
 kx = (2*pi/(N*dx)) * (-N/2 : N/2-1);   % range from -pi/dx to +pi/dx
 ky = kx;  % symmetric, since dx = dy
-
-% Make 2D mesh in frequency space
 [KX, KY] = meshgrid(kx, ky);
 
 % Free space transfer function of propagation 
-H=exp(1i/(2*k0)*dz*(KX.^2+KY.^2));
+H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2));
 
-% Mirror phase
-M = exp(1i*k0*(X.^2+Y.^2)/(2*Rc1));
+% Mirror phase screen
+rmask1 = exp(-1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
+rmask2 = exp(-1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
+%M = exp(1i*k0*(X.^2+Y.^2)/(2*Rc1));
+
+%%
+% --- SIMULATION --- %
+
+fig = figure; 
+subplot(1,2,1)
+s=surf(X, Y, I0, 'LineStyle','none', 'DisplayName', '_nolegend_');
+set(get(get(s,'Annotation'),'LegendInformation'), 'IconDisplayStyle','off');
+hold on;
+plot3(x_circ1, y_circ1, zeros(size(x_circ1)), 'r-', 'LineWidth', 2);
+hold off;
+title('Laser Mode at z = 0 m')
+zlabel('Intensity')
+xlabel('X [m]')
+ylabel('Y [m]')
 
 % Beam interacts with RHS mirror at L/2
-E0 = E0.*M;
+E = E.*M;
 
 save_interval = 1; % save frequency
 
 % Propagation from L/2 (RHS) to -L/2 (LHS)
-E=E0; % initialize E
-n1=0; % initialize step
-l = -L/2; % set current position
-for z=0:dz:L % take steps of size dz, from 0 to L
-    n1=n1+1; 
-    Zp(n1) = z+dz; % distance propagated so far
-    l(n1) = l+dz; % position within the cavity
-    % Propagation in frequency domain, step 2
-    % Gaussian Beam in frequency domain 
-    FE = fft2(E); 
-    % Propagated Gaussian beam in frequency domain 
-    FE = FE.*fftshift(H); 
-    % Propagated Gaussian beam in space domain 
-    E = ifft2(FE); 
-    % Step propagation through medium 
+n1 = 0; % initialize step
+l = L/2; % set current position
+for z = 0:dz:L % take steps of size dz, from 0 to L
+    n1 = n1+1; 
+    Zp(n1) = z+dz; % total distance propagated so far
+    l = l-dz; % current position within the cavity
+    FE = fft2(E); % transform beam to frequency domain
+    FE = FE.*fftshift(H); % propagate beam in frequency domain 
+    E = ifft2(FE); % transform back to space domain 
     if mod(n1, save_interval) == 0
         step_label = sprintf('step_%d', n1);
         Es.(step_label) = E; % save intermediate field
@@ -120,13 +115,8 @@ zlabel('Intensity')
 xlabel('X [m]')
 ylabel('Y [m]')
 
-% Pass 2
-
-% Beam clipped by LHS mirror at -L/2
-E = E.*mmask_L;
-
-% Beam interacts with LHS mirror at -L/2
-E = E.*M;
+% Beam interacts with mirror 2 (LHS mirror at -L/2
+E = E.*cmask2.*rmask2;
 
 fig = figure;
 I = 0.5*eps0*c*abs(E).^2;
@@ -143,18 +133,13 @@ ylabel('Y [m]')
 % Propagation from -L/2 back to L/2
 n1=0; % initialize step
 l = -L/2; % set current position
-for z=0:dz:L % take steps of size dz, from 0 to L
+for z = 0:dz:L % take steps of size dz, from 0 to L
     n1=n1+1; 
-    Zp(n1) = z+dz; % distance propagated so far
-    l(n1) = l+dz; % position within the cavity
-    % Propagation in frequency domain, step 2
-    % Gaussian Beam in frequency domain 
-    FE = fft2(E); 
-    % Propagated Gaussian beam in frequency domain 
-    FE = FE.*fftshift(H); 
-    % Propagated Gaussian beam in space domain 
-    E = ifft2(FE); 
-    % Step propagation through medium 
+    Zp(n1) = z+dz; % total distance propagated so far
+    l = l+dz; % current position within the cavity
+    FE = fft2(E); % transform beam to frequency domain
+    FE = FE.*fftshift(H); % propagate beam in frequency domain 
+    E = ifft2(FE); % transform back to space domain 
     if mod(n1, save_interval) == 0
         step_label = sprintf('step_%d', n1);
         Es.(step_label) = E; % save intermediate field
@@ -162,7 +147,7 @@ for z=0:dz:L % take steps of size dz, from 0 to L
 end
 
 % Beam clipped by RHS mirror at L/2
-E = E.*mmask_R;
+E = E.*cmask1;
 
 I = 0.5*eps0*c*abs(E).^2;
 subplot(1,2,2)
