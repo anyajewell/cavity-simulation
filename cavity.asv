@@ -22,6 +22,9 @@ CFL = 0.0625;
 
 k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
 D = 1i/(2*k0); % diffraction operator
+mmask = (X.^2 + Y.^2.^2; % mirror mask
+mirror_radius = D1/2;
+mmask = double(X.^2 + Y.^2 <= mirror_radius^2);
 
 % Grid
 x = linspace(-W,W,N);
@@ -99,11 +102,15 @@ ylabel('Y [m]')
 
 % Pass 2
 
+% Beam clipped by LHS mirror at -L/2
+E = E.*mmask;
+
 % Beam interacts with LHS mirror at -L/2
 E = E.*M;
 
+fig = figure;
 I = 0.5*eps0*c*abs(E).^2;
-subplot(1,2,2)   % 1 row, 2 columns, first plot
+subplot(1,2,1)   % 1 row, 2 columns, first plot
 surf(X, Y, I, 'LineStyle','none');
 title(sprintf('Laser Mode at z = %.1f m, Before Second Pass', L))
 zlabel('Intensity')
@@ -131,7 +138,7 @@ end
 I = 0.5*eps0*c*abs(E).^2;
 subplot(1,2,2)   % 1 row, 2 columns, first plot
 surf(X, Y, I, 'LineStyle','none');
-title(sprintf('Laser Mode at z = %.1f m, Before Second Pass', L))
+title(sprintf('Laser Mode at z = %.1f m, After Second Pass', 2*L))
 zlabel('Intensity')
 xlabel('X [m]')
 ylabel('Y [m]')

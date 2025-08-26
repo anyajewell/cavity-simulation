@@ -22,6 +22,8 @@ CFL = 0.0625;
 
 k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
 D = 1i/(2*k0); % diffraction operator
+mmask_R = (X.^2 + Y.^2 <= (D1/2)^2); % mirror 1 mask (RHS)
+mmask_L = (X.^2 + Y.^2 <= (D2/2)^2); % mirror 2 mask (LHS)
 
 % Grid
 x = linspace(-W,W,N);
@@ -99,6 +101,9 @@ ylabel('Y [m]')
 
 % Pass 2
 
+% Beam clipped by LHS mirror at -L/2
+E = E.*mmask_L;
+
 % Beam interacts with LHS mirror at -L/2
 E = E.*M;
 
@@ -129,6 +134,9 @@ for z=0:dz:L % take steps of size dz, from 0 to L
     end
 end
 
+% Beam clipped by RHS mirror at L/2
+E = E.*mmask_R;
+
 I = 0.5*eps0*c*abs(E).^2;
 subplot(1,2,2)   % 1 row, 2 columns, first plot
 surf(X, Y, I, 'LineStyle','none');
@@ -136,6 +144,30 @@ title(sprintf('Laser Mode at z = %.1f m, After Second Pass', 2*L))
 zlabel('Intensity')
 xlabel('X [m]')
 ylabel('Y [m]')
+
+% Mirror radii
+r1 = D1/2;
+r2 = D2/2;
+
+% Coordinates for circle outlines
+theta = linspace(0,2*pi,400);
+x_circ1 = r1*cos(theta);
+y_circ1 = r1*sin(theta);
+x_circ2 = r2*cos(theta);
+y_circ2 = r2*sin(theta);
+
+% Example overlay on first plot
+figure(fig); % reuse figure with the surf
+subplot(1,2,1);
+hold on;
+plot3(x_circ1, y_circ1, zeros(size(x_circ1)), 'r-', 'LineWidth', 2); % circle at z=0
+hold off;
+
+subplot(1,2,2);
+hold on;
+plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2); % circle at z=L
+hold off;
+
 
 % --- SIMULATION --- %
 
