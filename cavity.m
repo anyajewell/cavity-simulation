@@ -1,12 +1,10 @@
 % --- SETUP --- %
 
 % Constants
-
 c = 3*10^8; % speed of light, [m/s]
 eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-
 L = 1; % length of cavity, [m]
 D1 = 0.0254; % diameter of mirror 1, [m]
 D2 = D1; % diameter of mirror 2, [m]
@@ -17,14 +15,6 @@ lambda = 780e-9; % laser wavelength, [m]
 W = 5e-2; % domain half width, [m]
 CFL = 0.0625;
 
-
-% Derived parameters
-
-k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
-D = 1i/(2*k0); % diffraction operator
-mmask_R = (X.^2 + Y.^2 <= (D1/2)^2); % mirror 1 mask (RHS)
-mmask_L = (X.^2 + Y.^2 <= (D2/2)^2); % mirror 2 mask (LHS)
-
 % Grid
 x = linspace(-W,W,N);
 y = x;
@@ -34,19 +24,26 @@ dy = dx;
 dz = L; % make each step a trip across the cavity
 [X,Y] = meshgrid(x,y); % space domain
 
+% Derived parameters
+k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
+D = 1i/(2*k0); % diffraction operator
+mmask_R = (X.^2 + Y.^2 <= (D1/2)^2); % mirror 1 mask (RHS)
+mmask_L = (X.^2 + Y.^2 <= (D2/2)^2); % mirror 2 mask (LHS)
+
+% Set up mirror physical parameters for plotting
+r1 = D1/2; % radius of mirror 1
+r2 = D2/2; % radius of mirror 2
+theta = linspace(0,2*pi,400);
+x_circ1 = r1*cos(theta);
+y_circ1 = r1*sin(theta);
+x_circ2 = r2*cos(theta);
+y_circ2 = r2*sin(theta);
+
 % Input beam
 w0 = 0.01; % input beam radius, [m]
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
-
+E = E0;
 I0 = 0.5*eps0*c*abs(E0).^2;
-
-fig = figure; 
-subplot(1,2,1)   % 1 row, 2 columns, first plot
-surf(X, Y, I0, 'LineStyle','none');
-title('Laser Mode at z = 0 m')
-zlabel('Intensity')
-xlabel('X [m]')
-ylabel('Y [m]')
 
 % Stability
 g1 = 1 - L/Rc1; % stability parameter 1
@@ -56,27 +53,42 @@ g = g1*g2; % stability product, 0 < g < 1 for a stable cavity
 % Set up frequency space
 kx = (2*pi/(N*dx)) * (-N/2 : N/2-1);   % range from -pi/dx to +pi/dx
 ky = kx;  % symmetric, since dx = dy
-
-% Make 2D mesh in frequency space
 [KX, KY] = meshgrid(kx, ky);
 
 % Free space transfer function of propagation 
-H=exp(1i/(2*k0)*dz*(KX.^2+KY.^2));
+H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2));
 
-% Mirror phase
-M = exp(1i*k0*(X.^2+Y.^2)/(2*Rc1));
+% Mirror phase screen
+M = exp(-1i*k0*(X.^2+Y.^2)/(Rc1));
+%M = exp(1i*k0*(X.^2+Y.^2)/(2*Rc1));
+
+%%
+% --- SIMULATION --- %
+
+fig = figure; 
+subplot(1,2,1)
+s=surf(X, Y, I0, 'LineStyle','none', 'DisplayName', '_nolegend_');
+set(get(get(s,'Annotation'),'LegendInformation'), 'IconDisplayStyle','off');
+hold on;
+plot3(x_circ1, y_circ1, zeros(size(x_circ1)), 'r-', 'LineWidth', 2);
+hold off;
+title('Laser Mode at z = 0 m')
+zlabel('Intensity')
+xlabel('X [m]')
+ylabel('Y [m]')
 
 % Beam interacts with RHS mirror at L/2
-E0 = E0.*M;
+E = E.*M;
 
 save_interval = 1; % save frequency
 
-% Pass 1
-E=E0; % initialize E
+% Propagation from L/2 (RHS) to -L/2 (LHS)
 n1=0; % initialize step
+l = L/2; % set current position
 for z=0:dz:L % take steps of size dz, from 0 to L
     n1=n1+1; 
-    Zp(n1) = z+dz; % distance propagated so far
+    Zp(n1) = z+dz; % total distance propagated so far
+    l = l-dz; % current position within the cavity
     % Propagation in frequency domain, step 2
     % Gaussian Beam in frequency domain 
     FE = fft2(E); 
@@ -92,8 +104,12 @@ for z=0:dz:L % take steps of size dz, from 0 to L
 end
 
 I = 0.5*eps0*c*abs(E).^2;
-subplot(1,2,2)   % 1 row, 2 columns, first plot
-surf(X, Y, I, 'LineStyle','none');
+subplot(1,2,2)
+s=surf(X, Y, I, 'LineStyle','none');
+set(get(get(s,'Annotation'),'LegendInformation'), 'IconDisplayStyle','off');
+hold on;
+plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2, 'DisplayName', 'Mirror 2');
+hold off;
 title(sprintf('Laser Mode at z = %.1f m, After First Pass', L))
 zlabel('Intensity')
 xlabel('X [m]')
@@ -109,17 +125,23 @@ E = E.*M;
 
 fig = figure;
 I = 0.5*eps0*c*abs(E).^2;
-subplot(1,2,1)   % 1 row, 2 columns, first plot
+subplot(1,2,1)
 surf(X, Y, I, 'LineStyle','none');
+hold on;
+plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2, 'DisplayName', 'Mirror 2');
+hold off;
 title(sprintf('Laser Mode at z = %.1f m, Before Second Pass', L))
 zlabel('Intensity')
 xlabel('X [m]')
 ylabel('Y [m]')
 
+% Propagation from -L/2 back to L/2
 n1=0; % initialize step
+l = -L/2; % set current position
 for z=0:dz:L % take steps of size dz, from 0 to L
     n1=n1+1; 
-    Zp(n1) = z+dz; % distance propagated so far
+    Zp(n1) = z+dz; % total distance propagated so far
+    l = l+dz; % current position within the cavity
     % Propagation in frequency domain, step 2
     % Gaussian Beam in frequency domain 
     FE = fft2(E); 
@@ -138,58 +160,16 @@ end
 E = E.*mmask_R;
 
 I = 0.5*eps0*c*abs(E).^2;
-subplot(1,2,2)   % 1 row, 2 columns, first plot
+subplot(1,2,2)
 surf(X, Y, I, 'LineStyle','none');
+hold on;
+plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2, 'DisplayName', 'Mirror 2');
+hold off;
 title(sprintf('Laser Mode at z = %.1f m, After Second Pass', 2*L))
 zlabel('Intensity')
 xlabel('X [m]')
 ylabel('Y [m]')
 
-% Mirror radii
-r1 = D1/2;
-r2 = D2/2;
-
-% Coordinates for circle outlines
-theta = linspace(0,2*pi,400);
-x_circ1 = r1*cos(theta);
-y_circ1 = r1*sin(theta);
-x_circ2 = r2*cos(theta);
-y_circ2 = r2*sin(theta);
-
-% Example overlay on first plot
-figure(fig); % reuse figure with the surf
-subplot(1,2,1);
-hold on;
-plot3(x_circ1, y_circ1, zeros(size(x_circ1)), 'r-', 'LineWidth', 2); % circle at z=0
-hold off;
-
-subplot(1,2,2);
-hold on;
-plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2); % circle at z=L
-hold off;
-
-
-% --- SIMULATION --- %
-
-% Fourier transform
-
-% Diffraction
-
-% Fourier transform
-
-% Refraction
-
-
-% Mirror interaction
-
-% Delete light that is clipped by mirror boundary
-
-% Apply phase screen to simulate concave mirror
-
-% Flip sign of delta z to send the light back in the opposite direction
-
-
-% Repeat once more 
 
 %% Post-processing
 
