@@ -1,0 +1,129 @@
+clc; clear all;
+
+% --- SETUP --- %
+
+% Constants
+consts.c = 3*10^8; % speed of light, [m/s]
+consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
+
+% Adjustable parameters
+L = 1; % length of cavity, [m]
+D1 = 0.0254; % diameter of mirror 1, [m]
+D2 = D1; % diameter of mirror 2, [m]
+Rc1 = 3; % radius of curvature for mirror 1, [m]
+Rc2 = Rc1; % radius of curvature for mirror 2, [m]
+N = 3000; % number of mesh points along each dim of mesh grid
+lambda = 780e-9; % laser wavelength, [m]
+W = 5e-2; % domain half width, [m]
+CFL = 0.0625;
+
+% Grid
+x = linspace(-W,W,N);
+y = x;
+dx = x(2) - x(1);
+dy = dx;
+%dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
+dz = L; % make each step a trip across the cavity, [m]
+[X,Y] = meshgrid(x,y); % space domain
+
+% Derived parameters
+k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
+cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
+cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
+
+% Set up mirror physical parameters for plotting
+r1 = D1/2; % radius of mirror 1
+r2 = D2/2; % radius of mirror 2
+theta = linspace(0,2*pi,400);
+x_circ1 = r1*cos(theta);
+y_circ1 = r1*sin(theta);
+x_circ2 = r2*cos(theta);
+y_circ2 = r2*sin(theta);
+
+% Input beam
+w0 = 0.01; % input beam waist, [m]
+E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
+E = E0;
+I0 = 0.5*consts.eps0*consts.c*abs(E0).^2; % initial intensity, [W/m^2]
+
+% Stability
+g1 = 1 - L/Rc1; % stability parameter 1
+g2 = 1 - L/Rc2; % stability paramter 2
+g = g1*g2; % stability product, 0 < g < 1 for a stable cavity
+
+% Set up frequency space
+kx = (2*pi/(N*dx)) * (-N/2 : N/2-1);   % range from -pi/dx to +pi/dx
+ky = kx;  % symmetric, since dx = dy
+[KX, KY] = meshgrid(kx, ky);
+
+% Free space transfer function of propagation 
+H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2));
+
+% Mirror phase screens
+rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
+rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
+%rmask1 = exp(1i*k0*(X.^2+Y.^2)/(2*Rc1));
+%rmask2 = exp(1i*k0*(X.^2+Y.^2)/(2*Rc2));
+
+% Simulation settings
+save_interval = 1; % save frequency
+step = 0; % initialize step 
+Z_traveled = []; % initialize prop distance array
+Z_position = []; % initialize intra-cavity position array
+num_steps = round(L/dz); % number of steps needed for one trip across the cavity
+Es = struct(); % initialize a struct for saving intermediate E fields
+
+%%
+
+% --- SIMULATION --- %
+
+% Example of one round-trip
+
+% --------------------------------(1)----------------------------------- %
+
+% Beam enters cavity at +L/2 (RHS)
+
+% Propagation from +L/2 (RHS) to -L/2 (LHS)
+[step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
+
+% Beam interacts with mirror 2 (LHS) mirror at -L/2
+E = E.*cmask2.*rmask2;
+
+plot_intensity(E, consts, Z_traveled, Z_position, step, X, Y, x_circ2, y_circ2); % take a look at the beam
+
+% --------------------------------(2)----------------------------------- %
+
+% Propagation from -L/2 back to +L/2
+[step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
+
+% Beam interacts with mirror 1 (RHS) mirror at +L/2
+E = E.*cmask1.*rmask1;
+
+plot_intensity(E, consts, Z_traveled, Z_position, step, X, Y, x_circ2, y_circ2); % take a look at the beam
+
+%%
+
+% Set how many round trips across the cavity you want to take.
+% e.g. RHS --> LHS --> RHS = 1 round trip.
+
+num_round_trips = 5;
+
+for i = 1:num_round_trips
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
+    E = E.*cmask2.*rmask2;
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
+    E = E.*cmask1.*rmask1;
+end
+
+plot_intensity(E, consts, Z_traveled, Z_position, step, X, Y, x_circ2, y_circ2); % take a look at the beam
+
+%% Post-processing
+
+% Analytical solution calculation
+% zr = pi*w0^2 / lambda; % Rayleigh range
+% wz = w0*sqrt(1+(Z_traveled(step)/zr).^2);
+% Eana = w0./wz.*exp(-(X.^2+Y.^2)/wz.^2);
+% Iana = abs(Eana).^2; % analytical solution at this point
+
+% Graphing
+

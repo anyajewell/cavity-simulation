@@ -87,6 +87,7 @@ save_interval = 1; % save frequency
 % --------------------------------------------------------------------- %
 
 % Beam enters cavity at +L/2 (RHS)
+E = E.*rmask1; % immediately start focusing
 % Propagation from +L/2 (RHS) to -L/2 (LHS)
 
 step = 0; % initialize step 
@@ -95,9 +96,9 @@ Z_position = []; % initialize intra-cavity position array
 
 num_steps = round(L/dz); % number of steps needed for one trip across the cavity
 
-for n = 1:num_steps
+for n = 1:num_steps 
     
-    % propagation
+    % propogation
     step = step + 1;
     Z_traveled(step) = step*dz; % total distance propagated so far
     Z_position(step) = L/2 - dz; % current position within the cavity
@@ -152,9 +153,9 @@ ylabel('Y [m]')
 
 % Propagation from -L/2 back to +L/2
 
-for n = 1:num_steps
+for n = 1:num_steps 
     
-    % propagation
+    % propogation
     step = step + 1;
     Z_traveled(step) = step*dz; % total distance propagated so far
     Z_position(step) = -L/2 + dz; % current position within the cavity
