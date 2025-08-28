@@ -12,9 +12,9 @@ eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 L = 1; % length of cavity, [m]
 D1 = 0.0254; % diameter of mirror 1, [m]
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = 3; % radius of curvature for mirror 1, [m]
+Rc1 = 2; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
-N = 128; % number of mesh points along each dim of mesh grid
+N = 3000; % number of mesh points along each dim of mesh grid
 lambda = 780e-9; % laser wavelength, [m]
 W = 5e-2; % domain half width, [m]
 CFL = 0.0625;
@@ -25,7 +25,7 @@ y = x;
 dx = x(2) - x(1);
 dy = dx;
 %dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
-dz = L; % make each step a trip across the cavity
+dz = L/2; % make each step a trip across the cavity, [m]
 [X,Y] = meshgrid(x,y); % space domain
 
 % Derived parameters
@@ -44,10 +44,10 @@ x_circ2 = r2*cos(theta);
 y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.01; % input beam radius, [m]
+w0 = 0.01; % input beam waist, [m]
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
-I0 = 0.5*eps0*c*abs(E0).^2;
+I0 = 0.5*eps0*c*abs(E0).^2; % initial intensity
 
 % Stability
 g1 = 1 - L/Rc1; % stability parameter 1
@@ -63,9 +63,16 @@ ky = kx;  % symmetric, since dx = dy
 H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2));
 
 % Mirror phase screen
-rmask1 = exp(-1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
-rmask2 = exp(-1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
-%M = exp(1i*k0*(X.^2+Y.^2)/(2*Rc1));
+rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
+rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
+%rmask1 = exp(1i*k0*(X.^2+Y.^2)/(2*Rc1));
+%rmask2 = exp(1i*k0*(X.^2+Y.^2)/(2*Rc2));
+
+% Analytical solution calculation
+% zr = pi*w0^2 / lambda; % Rayleigh range
+% wz = w0*sqrt(1+(Z_traveled(step)/zr).^2);
+% Eana = w0./wz.*exp(-(X.^2+Y.^2)/wz.^2);
+% Iana = abs(Eana).^2; % analytical solution at this point
 
 %%
 % --- SIMULATION --- %
@@ -77,30 +84,41 @@ set(get(get(s,'Annotation'),'LegendInformation'), 'IconDisplayStyle','off');
 hold on;
 plot3(x_circ1, y_circ1, zeros(size(x_circ1)), 'r-', 'LineWidth', 2);
 hold off;
-title('Laser Mode at z = 0 m')
+title('Initial Laser Mode at z = 0 m, Intra-Cavity Position = 0.5')
 zlabel('Intensity')
 xlabel('X [m]')
 ylabel('Y [m]')
 
-% Beam reflects off mirror 1 (RHS) at L/2 before beginning propagation?
-%E = E.*rmask1;
-
 save_interval = 1; % save frequency
 
-% Propagation from L/2 (RHS) to -L/2 (LHS)
-n1 = 0; % initialize step
-l = L/2; % set current position
-for z = 0:dz:L % take steps of size dz, from 0 to L
-    n1 = n1+1; 
-    Zp(n1) = z+dz; % total distance propagated so far
-    l = l-dz; % current position within the cavity
+% --------------------------------------------------------------------- %
+
+% Beam enters cavity at +L/2 (RHS)
+E = E.*rmask1; % immediately start focusing
+% Propagation from +L/2 (RHS) to -L/2 (LHS)
+
+step = 0; % initialize step 
+Z_traveled = []; % initialize prop distance array
+Z_position = []; % initialize intra-cavity position array
+
+num_steps = round(L/dz); % number of steps needed for one trip across the cavity
+
+for n = 1:num_steps 
+    
+    % propogation
+    step = step + 1;
+    Z_traveled(step) = step*dz; % total distance propagated so far
+    Z_position(step) = L/2 - dz; % current position within the cavity
     FE = fft2(E); % transform beam to frequency domain
     FE = FE.*fftshift(H); % propagate beam in frequency domain 
     E = ifft2(FE); % transform back to space domain 
-    if mod(n1, save_interval) == 0
-        step_label = sprintf('step_%d', n1);
+    
+    % save snapshots
+    if mod(step, save_interval) == 0
+        step_label = sprintf('step_%d', step);
         Es.(step_label) = E; % save intermediate field
     end
+
 end
 
 I = 0.5*eps0*c*abs(E).^2;
@@ -110,44 +128,60 @@ set(get(get(s,'Annotation'),'LegendInformation'), 'IconDisplayStyle','off');
 hold on;
 plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2, 'DisplayName', 'Mirror 2');
 hold off;
-title(sprintf('Laser Mode at z = %.1f m, After First Pass', L))
+title({
+    sprintf('Laser Mode at Z = %.1f m', Z_traveled(step)), ...
+    sprintf('Intra-Cavity Position = %.1f', Z_position(step)), ...
+    'Before Mirror Clippage'
+})
 zlabel('Intensity')
 xlabel('X [m]')
 ylabel('Y [m]')
 
-% Beam interacts with mirror 2 (LHS mirror at -L/2
-E = E.*cmask2.*rmask2;
+% Beam interacts with mirror 2 (LHS) mirror at -L/2
+%E = E.*cmask2.*rmask2;
+%E = E.*cmask1; 
 
-fig = figure;
+fig = figure; % new figure
 I = 0.5*eps0*c*abs(E).^2;
 subplot(1,2,1)
 surf(X, Y, I, 'LineStyle','none');
 hold on;
 plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2, 'DisplayName', 'Mirror 2');
 hold off;
-title(sprintf('Laser Mode at z = %.1f m, Before Second Pass', L))
+title({
+    sprintf('Laser Mode at Z = %.1f m', Z_traveled(step)), ...
+    sprintf('Intra-Cavity Position = %.1f', Z_position(step))...
+    'After Mirror Clippage'
+})
 zlabel('Intensity')
 xlabel('X [m]')
 ylabel('Y [m]')
 
-% Propagation from -L/2 back to L/2
-n1=0; % initialize step
-l = -L/2; % set current position
-for z = 0:dz:L % take steps of size dz, from 0 to L
-    n1=n1+1; 
-    Zp(n1) = z+dz; % total distance propagated so far
-    l = l+dz; % current position within the cavity
+% --------------------------------------------------------------------- %
+
+% Propagation from -L/2 back to +L/2
+
+for n = 1:num_steps 
+    
+    % propogation
+    step = step + 1;
+    Z_traveled(step) = step*dz; % total distance propagated so far
+    Z_position(step) = -L/2 + dz; % current position within the cavity
     FE = fft2(E); % transform beam to frequency domain
     FE = FE.*fftshift(H); % propagate beam in frequency domain 
     E = ifft2(FE); % transform back to space domain 
-    if mod(n1, save_interval) == 0
-        step_label = sprintf('step_%d', n1);
+    
+    % save snapshots
+    if mod(step, save_interval) == 0
+        step_label = sprintf('step_%d', step);
         Es.(step_label) = E; % save intermediate field
     end
+
 end
 
-% Beam interacts with mirror 1 (RHS) mirror at L/2
-E = E.*cmask1.*rmask1;
+% Beam interacts with mirror 1 (RHS) mirror at +L/2
+%E = E.*cmask1.*rmask1;
+%E = E.*cmask1; 
 
 I = 0.5*eps0*c*abs(E).^2;
 subplot(1,2,2)
@@ -155,7 +189,10 @@ surf(X, Y, I, 'LineStyle','none');
 hold on;
 plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2, 'DisplayName', 'Mirror 2');
 hold off;
-title(sprintf('Laser Mode at z = %.1f m, After Second Pass', 2*L))
+title({
+    sprintf('Laser Mode at Z = %.1f m', Z_traveled(step)), ...
+    sprintf('Intra-Cavity Position = %.1f', Z_position(step))
+})
 zlabel('Intensity')
 xlabel('X [m]')
 ylabel('Y [m]')
@@ -175,18 +212,6 @@ title('Laser Mode')
 zlabel('Intensity')
 xlabel('X [m]')
 ylabel('Y [m]')
-
-%% Helper functions
-
-% Fourier transforms
-function G = ft(g, delta)
-    G = fftshift(fft(fftshift(g))) * delta;
-end
-
-function g = ift(G, delta_f)
-    g = ifftshift(ifft(ifftshift(G))) * length(G) * delta_f;
-end
-
 
 %% Example, Poon and Kim
 
@@ -248,10 +273,10 @@ H=exp(1i/(2*ko)*dz*(KX.^2+KY.^2));
 
 %Iterative Loop 
 Gau=Gau_ini; 
-n1=0; 
+step=0; 
 for z=0:dz:Z 
-    n1=n1+1; 
-    Zp(n1)=z+dz; 
+    step=step+1; 
+    Zp(step)=z+dz; 
     % Propagation in frequency domain, step 2
     %Gaussian Beam in Frequency domain 
     FGau=fft2(Gau); 
@@ -260,7 +285,7 @@ for z=0:dz:Z
     %Propagated Gaussian beam in space domain 
     Gau=ifft2(FGau); 
     %Step propagation through medium 
-    Gau_pro(:,n1)=Gau(:,127); 
+    Gau_pro(:,step)=Gau(:,127); 
 end
 
 %Energy of the final propagated Gaussian beam, 
@@ -292,7 +317,7 @@ axis([min(x) max(x) min(y) max(y) 0 MAX])
 axis square
 
 figure(3); 
-for l=1:n1
+for l=1:step
 plot3(x',Zp(l)*ones(size(x')),abs(Gau_pro(:,l))) 
 hold on 
 end 
