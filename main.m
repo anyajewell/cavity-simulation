@@ -7,14 +7,14 @@ consts.c = 3*10^8; % speed of light, [m/s]
 consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-L = 1; % length of cavity, [m]
-D1 = 0.0254; % diameter of mirror 1, [m]
+L = 25; % length of cavity, [m]
+D1 = 0.0254/2; % diameter of mirror 1, [m]
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = 3; % radius of curvature for mirror 1, [m]
+Rc1 = 50; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
-N = 3000; % number of mesh points along each dim of mesh grid
-lambda = 780e-9; % laser wavelength, [m]
-W = 5e-2; % domain half width, [m]
+N = 2048; % number of mesh points along each dim of mesh grid
+lambda = 1.064e-6; % laser wavelength, [m]
+W = 2*D1; % domain half width, [m]
 CFL = 0.0625;
 
 % Grid
@@ -41,7 +41,7 @@ x_circ2 = r2*cos(theta);
 y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.01; % input beam waist, [m]
+w0 = 0.001; % input beam waist, [m]
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
 I0 = 0.5*consts.eps0*consts.c*abs(E0).^2; % initial intensity, [W/m^2]
@@ -106,16 +106,38 @@ plot_intensity(E, consts, Z_traveled, Z_position, step, X, Y, x_circ2, y_circ2);
 % Set how many round trips across the cavity you want to take.
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
-num_round_trips = 3;
+num_round_trips = 100;
+figure;
+ title({
+        sprintf('Laser Mode at Z = %.1f m', Z_traveled(step)), ...
+        sprintf('Intra-Cavity Position = %.1f', Z_position(step))
+    })
+    zlabel('Intensity')
+    xlabel('X [m]')
+    ylabel('Y [m]')
+
+P0 = sum(sum(abs(E).^2));
 
 for i = 1:num_round_trips
     [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
     E = E.*cmask2.*rmask2;
     [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
     E = E.*cmask1.*rmask1;
+    %plot_intensity(E, consts, Z_traveled, Z_position, step, X, Y, x_circ2, y_circ2); % take a look at the beam
+    
+    I = 0.5*consts.eps0*consts.c*abs(E).^2;
+    surf(X, Y, I, 'LineStyle','none');
+    hold on;
+    plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2); % plot mirror outline
+    hold off;
+    getframe();
+
+    %rescale 
+    Pk(i) = max(max(abs(E).^2));
+    E = E*sqrt(P0/sum(sum(abs(E).^2)));
+    BeamWidth(i) = sum(sum(sqrt(X.^2+Y.^2).*abs(E).^2))/P0;
 end
 
-plot_intensity(E, consts, Z_traveled, Z_position, step, X, Y, x_circ2, y_circ2); % take a look at the beam
 
 %% Post-processing
 
