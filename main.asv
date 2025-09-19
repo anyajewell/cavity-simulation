@@ -174,7 +174,7 @@ sigma_y = zeros(1, L/dz);
 zs = z_i:dz:z_f;
 
 % Save analytical solutions across the cavity
-while z <= z_f
+while z < z_f
 
     wz(k) = w0*sqrt(1+(z/zr).^2); % beam width at this point
     Eana = w0./wz(k).*exp(-(X.^2+Y.^2)./wz(k).^2);
@@ -200,10 +200,5 @@ end
 % Graphing
 
 figure;
-plot(zs, +wz, 'b', 'LineWidth', 1.5, 'DisplayName', 'Analytical'); hold on;
-plot(zs, -wz, 'b', 'LineWidth', 1.5);
-xlabel('z [m]');
-ylabel('Transverse position [m]');
-title('Beam cross section');
-grid on;
+plot(zs, wz)
 

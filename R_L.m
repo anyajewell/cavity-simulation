@@ -7,7 +7,6 @@ function [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_positio
         step = step + 1;
         Z_traveled(step) = step*dz; % record total distance propagated so far
 
-
         % record current position within the cavity, AFTER the step has
         % been taken
         if step == 1 % this is the first step
