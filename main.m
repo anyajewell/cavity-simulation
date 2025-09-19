@@ -156,30 +156,30 @@ disp('Animation saved as cavity_propagation.mp4');
 
 %% Post-processing
 
-% Numeric
-E_num = E; % Use the last saved E, numeric complex field at current plane
-I_num = abs(E_num).^2; % numeric intensity
-Pnum = sum(I_num(:)) * dx * dy; % total power
-sigma_r_num = sqrt(sum(I_num(:).*(X(:).^2+Y(:).^2))*dx*dy/Pnum); % second moment
-w0_num = 2 * sigma_r_num *10^3; % 1/e^2 waist
-fprintf('Numeric w0: %.3g mm \n', w0_num);
-
-% One run across the cavity to compute numeric variables of interest: E, I,
-% etc.
-
-% Analytic
-dz_ana = 1; % little steps across the cavity     
-zs = -L/2:dz_ana:+L/2; % z positions, measured relative to the cavity center, z = 0, [m]
+% Trackers used for both numeric and analytic
+dz_post = 1; % little steps across the cavity  
+zs = -L/2:dz_post:+L/2; % z positions, measured relative to the cavity center, z = 0, [m]
 numSteps = length(zs); % number of steps to be taken for one trip across the cavity
 
-% Initialize data stores
-wz = zeros(1, numSteps); Iana = cell(1, numSteps); xbar = zeros(1, numSteps); ybar = zeros(1, numSteps); sigma_x = zeros(1, numSteps); sigma_y = zeros(1, numSteps);
+% Numeric
+H_post = exp(1i/(2*k0)*dz_post*(KX.^2+KY.^2)); % compute free space transfer function for a shorter distance
+E_num = E; % Use the last saved E, numeric complex field at current plane
+dz_post = 1; % little steps across the cavity    
+Es_num = cell(1, numSteps); wz_num = zeros(1, numSteps); % initialize cell arrays to save numeric results
+[Es_num, wz_num] = Save_Numeric_Results(E_num, Es_num, wz_num, numSteps, H_post, X, Y, dx, dy);  
+fprintf('Numeric w0: %.3g mm \n', min(wz_num));
 
+% Analytic 
+wz_ana = zeros(1, numSteps); Iana = cell(1, numSteps); xbar = zeros(1, numSteps); ybar = zeros(1, numSteps);
+sigma_x = zeros(1, numSteps); sigma_y = zeros(1, numSteps); sigma_r = zeros(1, numSteps);
 zr = pi * w0_num^2 / lambda; % Rayleigh range from the numeric waist
 
+
+
+%%
 for k = 1:numSteps
     zrel = zs(k); % z relative to waist at cavity center
-    wz(k) = w0_num*sqrt(1 +(zrel/zr).^2); % spot size
+    wz_ana(k) = w0_num*sqrt(1 +(zrel/zr).^2); % analytical spot size
 
     % include curvature and optional Gouy phase for a correct complex field
     if zrel == 0
@@ -198,27 +198,25 @@ for k = 1:numSteps
         curvature_phase = 1;
     end
 
-    Eana = (w0_num./wz(k)).*exp(-r2./(wz(k).^2)).* curvature_phase.*exp(1i * psi);
+    Eana = (w0_num./wz_ana(k)).*exp(-r2./(wz_ana(k).^2)).* curvature_phase.*exp(1i * psi);
     Iana{k} = abs(Eana).^2; % analytic intensity
 
     % Moments
     Pana = sum(Iana{k}(:)) * dx * dy;
     xbar(k) = sum(sum(Iana{k} .* X)) * dx * dy / Pana;
     ybar(k) = sum(sum(Iana{k} .* Y)) * dx * dy / Pana;
-    sigma_x(k) = sqrt(sum(sum(Iana{k} .* (X - xbar_ana(k)).^2)) * dx * dy / Pana);
-    sigma_y(k) = sqrt(sum(sum(Iana{k} .* (Y - ybar_ana(k)).^2)) * dx * dy / Pana);
+    sigma_x(k) = sqrt(sum(sum(Iana{k} .* (X - xbar(k)).^2)) * dx * dy / Pana);
+    sigma_y(k) = sqrt(sum(sum(Iana{k} .* (Y - ybar(k)).^2)) * dx * dy / Pana);
 end
-
-% Convert rms sigma to 1/e^2 waist for plotting (w = 2*sigma if using 1/e^2 conv):
-w_x_from_moment = 2 * sigma_x_ana;
-w_y_from_moment = 2 * sigma_y_ana;
 
 %% Graphing
 
 figure;
-plot(zs, +wz, 'b', 'LineWidth', 1.5); hold on; 
-plot(zs, -wz, 'b', 'LineWidth', 1.5);
-plot(0, w0_num, 'ro', 'MarkerFaceColor','r', 'DisplayName','numeric w0');
+plot(zs, +wz_ana, 'b', 'LineWidth', 1.5, 'DisplayName', 'Analytical'); hold on; 
+plot(zs, -wz_ana, 'b', 'LineWidth', 1.5);
+%plot(0, w0_num, 'ro', 'MarkerFaceColor','r', 'DisplayName','numeric w0');
+plot(zs, +wz_num, 'r', 'LineWidth', 1.5, 'DisplayName', 'Numeric'); hold on; 
+plot(zs, -wz_num, 'r', 'LineWidth', 1.5);
 xlabel('z [m]');
 ylabel('Transverse position [m]');
 title('Beam cross section');
