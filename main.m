@@ -42,7 +42,6 @@ y_circ2 = r2*sin(theta);
 
 % Input beam
 w0 = 0.001; % input beam waist, [m]
-zr = pi*w0^2 / lambda; % Rayleigh range
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
 I0 = 0.5*consts.eps0*consts.c*abs(E0).^2; % initial intensity, [W/m^2]
@@ -135,8 +134,8 @@ for i = 1:num_round_trips
     plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2); % plot mirror outline
     hold off;
     % Force white background
-    set(gcf,'Color','w');   % figure background
-    set(gca,'Color','w');   % axes background
+    set(gcf,'Color','w'); % figure background
+    set(gca,'Color','w'); % axes background
     axis('square')
     axis tight;
     view(2)
@@ -157,53 +156,71 @@ disp('Animation saved as cavity_propagation.mp4');
 
 %% Post-processing
 
-% Take lowest mode solution from simulation
+% Numeric
+E_num = E; % Use the last saved E, numeric complex field at current plane
+I_num = abs(E_num).^2; % numeric intensity
+Pnum = sum(I_num(:)) * dx * dy; % total power
+sigma_r_num = sqrt(sum(I_num(:).*(X(:).^2+Y(:).^2))*dx*dy/Pnum); % second moment
+w0_num = 2 * sigma_r_num *10^3; % 1/e^2 waist
+fprintf('Numeric w0: %.3g mm \n', w0_num);
 
-% Analytical
-dz = 1; % little steps across the cavity
-z_i = 0; % beam starts at one side of the cavity
-z_f = L; % loop stops once beam reaches the other side
-z = z_i; % initialize z
-k = 1; % initialize counter
-wz = zeros(1, L/dz);
-Iana = cell(1, ceil((z_f - z_i)/dz)); % cell array
-xbar = zeros(1, L/dz);
-ybar = zeros(1, L/dz);
-sigma_x = zeros(1, L/dz);
-sigma_y = zeros(1, L/dz);
-zs = z_i:dz:z_f;
+% One run across the cavity to compute numeric variables of interest: E, I,
+% etc.
 
-% Save analytical solutions across the cavity
-while z <= z_f
+% Analytic
+dz_ana = 1; % little steps across the cavity     
+zs = -L/2:dz_ana:+L/2; % z positions, measured relative to the cavity center, z = 0, [m]
+numSteps = length(zs); % number of steps to be taken for one trip across the cavity
 
-    wz(k) = w0*sqrt(1+(z/zr).^2); % beam width at this point
-    Eana = w0./wz(k).*exp(-(X.^2+Y.^2)./wz(k).^2);
-    Iana{k} = abs(Eana).^2; % analytical solution at this point
-    Pana = sum(sum(Iana{k})) * dx * dy; % analytical total power
+% Initialize data stores
+wz = zeros(1, numSteps); Iana = cell(1, numSteps); xbar = zeros(1, numSteps); ybar = zeros(1, numSteps); sigma_x = zeros(1, numSteps); sigma_y = zeros(1, numSteps);
+
+zr = pi * w0_num^2 / lambda; % Rayleigh range from the numeric waist
+
+for k = 1:numSteps
+    zrel = zs(k); % z relative to waist at cavity center
+    wz(k) = w0_num*sqrt(1 +(zrel/zr).^2); % spot size
+
+    % include curvature and optional Gouy phase for a correct complex field
+    if zrel == 0
+        Rz = Inf;
+    else
+        Rz = zrel * (1 + (zr^2 / zrel^2));  % R(z) = z * (1 + (zr^2 / z^2))
+    end
+
+    psi = atan(zrel / zr);   % Gouy phase (not used in intensity)
+    % analytic complex field (amplitude + curvature) using 1/e^2 convention:
+    % E(r,z) = (w0/w(z)) * exp(- r^2 / w(z)^2) * exp(-i * k0 * r^2 / (2 Rz) ) * exp(i * psi)
+    r2 = X.^2 + Y.^2;
+    if isfinite(Rz)
+        curvature_phase = exp(-1i * k0 * r2 ./ (2 * Rz));
+    else
+        curvature_phase = 1;
+    end
+
+    Eana = (w0_num./wz(k)).*exp(-r2./(wz(k).^2)).* curvature_phase.*exp(1i * psi);
+    Iana{k} = abs(Eana).^2; % analytic intensity
 
     % Moments
-    xbar(k) = sum(sum(Iana{k} .* X)) * dx * dy ./ Pana; % centroid x
-    ybar(k) = sum(sum(Iana{k} .* Y)) * dx * dy ./ Pana; % centroid y
-    sigma_x(k) = sqrt(sum(sum(Iana{k} .* (X - xbar(k)).^2)) .* dx .* dy ./ Pana); % width x
-    sigma_y(k) = sqrt(sum(sum(Iana{k} .* (Y - ybar(k)).^2)) .* dx .* dy ./ Pana); % width y
-
-    z = z + dz; % propagate beam by one step dz
-    k = k + 1; % counter
-
+    Pana = sum(Iana{k}(:)) * dx * dy;
+    xbar(k) = sum(sum(Iana{k} .* X)) * dx * dy / Pana;
+    ybar(k) = sum(sum(Iana{k} .* Y)) * dx * dy / Pana;
+    sigma_x(k) = sqrt(sum(sum(Iana{k} .* (X - xbar_ana(k)).^2)) * dx * dy / Pana);
+    sigma_y(k) = sqrt(sum(sum(Iana{k} .* (Y - ybar_ana(k)).^2)) * dx * dy / Pana);
 end
 
-% Numerical
+% Convert rms sigma to 1/e^2 waist for plotting (w = 2*sigma if using 1/e^2 conv):
+w_x_from_moment = 2 * sigma_x_ana;
+w_y_from_moment = 2 * sigma_y_ana;
 
-% Save numerical results across the cavity
-
-
-% Graphing
+%% Graphing
 
 figure;
-plot(zs, +wz, 'b', 'LineWidth', 1.5, 'DisplayName', 'Analytical'); hold on;
+plot(zs, +wz, 'b', 'LineWidth', 1.5); hold on; 
 plot(zs, -wz, 'b', 'LineWidth', 1.5);
+plot(0, w0_num, 'ro', 'MarkerFaceColor','r', 'DisplayName','numeric w0');
 xlabel('z [m]');
 ylabel('Transverse position [m]');
 title('Beam cross section');
 grid on;
-
+axis tight;
