@@ -41,7 +41,7 @@ x_circ2 = r2*cos(theta);
 y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.001; % input beam waist, [m]
+w0 = 0.002; % input beam waist, [m]
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
 I0 = 0.5*consts.eps0*consts.c*abs(E0).^2; % initial intensity, [W/m^2]
@@ -157,68 +157,47 @@ disp('Animation saved as cavity_propagation.mp4');
 %% Post-processing
 
 % Trackers used for both numeric and analytic
-dz_post = 1; % little steps across the cavity  
+dz_post = .5; % little steps across the cavity  
 zs = -L/2:dz_post:+L/2; % z positions, measured relative to the cavity center, z = 0, [m]
 numSteps = length(zs); % number of steps to be taken for one trip across the cavity
 
 % Numeric
 H_post = exp(1i/(2*k0)*dz_post*(KX.^2+KY.^2)); % compute free space transfer function for a shorter distance
-E_num = E; % Use the last saved E, numeric complex field at current plane
+E0_num = E; % Use the last saved E, numeric complex field at current plane
 dz_post = 1; % little steps across the cavity    
 Es_num = cell(1, numSteps); wz_num = zeros(1, numSteps); % initialize cell arrays to save numeric results
-[Es_num, wz_num] = Save_Numeric_Results(E_num, Es_num, wz_num, numSteps, H_post, X, Y, dx, dy);  
-fprintf('Numeric w0: %.3g mm \n', min(wz_num));
+[Es_num, wz_num] = Save_Numeric_Results(E0_num, Es_num, wz_num, numSteps, H_post, X, Y, dx, dy);  
+I_num = cellfun(@(E) abs(E).^2, Es_num, 'UniformOutput', false); % numeric intensity
+I0_num = abs(E0_num).^2; 
+w0_num = min(wz_num); % numeric waist
+fprintf('Numeric w0: %.3g mm \n', w0_num*10^3);
+I_num = I0_num*exp(-2*(X.^2+Y.^2)/w0_num^2); % intensity at numeric 1/e^2 waist
 
 % Analytic 
-wz_ana = zeros(1, numSteps); Iana = cell(1, numSteps); xbar = zeros(1, numSteps); ybar = zeros(1, numSteps);
-sigma_x = zeros(1, numSteps); sigma_y = zeros(1, numSteps); sigma_r = zeros(1, numSteps);
-zr = pi * w0_num^2 / lambda; % Rayleigh range from the numeric waist
+R = Rc1; % set which mirror the beam is arriving at
+w0_ana = sqrt(lambda*L/pi * sqrt(g1*g2*(1-g1*g2)/(g1+g2-2*g1*g2)^2)); % analytic beam waist from cavity geometry
+fprintf('Analytic w0: %.3g mm \n', w0_ana*10^3);
+zr = pi * w0_ana^2 / lambda; % Rayleigh range from the numeric waist
+wz_ana = w0_ana * sqrt(1+(zs./zr).^2); % analytic spot size along zs
+q0 = 1i*(pi*w0_ana^2)/lambda; % initial complex radius, evaluated at the center of the cavity, i.e. at the beam waist
+qz = R - (pi*wz_ana.^2)/(1i*lambda); % complex radius of curvature
 
-
-
-%%
-for k = 1:numSteps
-    zrel = zs(k); % z relative to waist at cavity center
-    wz_ana(k) = w0_num*sqrt(1 +(zrel/zr).^2); % analytical spot size
-
-    % include curvature and optional Gouy phase for a correct complex field
-    if zrel == 0
-        Rz = Inf;
-    else
-        Rz = zrel * (1 + (zr^2 / zrel^2));  % R(z) = z * (1 + (zr^2 / z^2))
-    end
-
-    psi = atan(zrel / zr);   % Gouy phase (not used in intensity)
-    % analytic complex field (amplitude + curvature) using 1/e^2 convention:
-    % E(r,z) = (w0/w(z)) * exp(- r^2 / w(z)^2) * exp(-i * k0 * r^2 / (2 Rz) ) * exp(i * psi)
-    r2 = X.^2 + Y.^2;
-    if isfinite(Rz)
-        curvature_phase = exp(-1i * k0 * r2 ./ (2 * Rz));
-    else
-        curvature_phase = 1;
-    end
-
-    Eana = (w0_num./wz_ana(k)).*exp(-r2./(wz_ana(k).^2)).* curvature_phase.*exp(1i * psi);
-    Iana{k} = abs(Eana).^2; % analytic intensity
-
-    % Moments
-    Pana = sum(Iana{k}(:)) * dx * dy;
-    xbar(k) = sum(sum(Iana{k} .* X)) * dx * dy / Pana;
-    ybar(k) = sum(sum(Iana{k} .* Y)) * dx * dy / Pana;
-    sigma_x(k) = sqrt(sum(sum(Iana{k} .* (X - xbar(k)).^2)) * dx * dy / Pana);
-    sigma_y(k) = sqrt(sum(sum(Iana{k} .* (Y - ybar(k)).^2)) * dx * dy / Pana);
-end
+% for i = 1:length(qz)
+%     qzi = qz(i);
+%     %E_ana{i} = 1/qzi * exp(-1i*k0 * (X.^2+Y.^2)/(2*qzi)); % analytical field at point z
+%     %I_ana{i} = cellfun(@(E) abs(E).^2, E_ana, 'UniformOutput', false); % analytic intensity
+% end
 
 %% Graphing
 
 figure;
-plot(zs, +wz_ana, 'b', 'LineWidth', 1.5, 'DisplayName', 'Analytical'); hold on; 
-plot(zs, -wz_ana, 'b', 'LineWidth', 1.5);
-%plot(0, w0_num, 'ro', 'MarkerFaceColor','r', 'DisplayName','numeric w0');
+plot(zs, +wz_ana, 'b', 'LineWidth', 1.5, 'DisplayName', 'Analytic'); hold on; 
+plot(zs, -wz_ana, 'b', 'LineWidth', 1.5, 'HandleVisibility', 'off');
 plot(zs, +wz_num, 'r', 'LineWidth', 1.5, 'DisplayName', 'Numeric'); hold on; 
-plot(zs, -wz_num, 'r', 'LineWidth', 1.5);
+plot(zs, -wz_num, 'r', 'LineWidth', 1.5, 'HandleVisibility', 'off');
 xlabel('z [m]');
 ylabel('Transverse position [m]');
 title('Beam cross section');
 grid on;
+legend()
 axis tight;
