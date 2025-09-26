@@ -15,7 +15,7 @@ Rc2 = Rc1; % radius of curvature for mirror 2, [m]
 N = 2048; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 2*D1; % domain half width, [m]
-CFL = 0.0625;
+CFL = 0.0625; % CFL number
 
 % Grid
 x = linspace(-W,W,N);
@@ -35,10 +35,7 @@ cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
 r1 = D1/2; % radius of mirror 1
 r2 = D2/2; % radius of mirror 2
 theta = linspace(0,2*pi,400);
-x_circ1 = r1*cos(theta);
-y_circ1 = r1*sin(theta);
-x_circ2 = r2*cos(theta);
-y_circ2 = r2*sin(theta);
+x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
 w0 = 0.002; % input beam waist, [m]
@@ -73,45 +70,26 @@ Z_position = []; % initialize intra-cavity position array
 num_steps = round(L/dz); % number of steps needed for one trip across the cavity
 Es = struct(); % initialize a struct for saving intermediate E fields
 
-%%
+% Prepare video writer
+todayStr = datestr(now, 'yyyy-mm-dd');
+saveFolder = fullfile('C:\Users\jewellan\Documents\MATLAB\ORACLE\Results', todayStr);
 
-% --- SIMULATION --- %
+if ~exist(saveFolder, 'dir')
+    mkdir(saveFolder);
+end
 
-% Example of one round-trip
+fileName = 'test.mp4';
+filePath = fullfile(saveFolder, fileName);
+v = VideoWriter(filePath, 'MPEG-4');
+v.FrameRate = 10; % adjust playback speed
+open(v);
 
-% --------------------------------(1)----------------------------------- %
-
-% Beam enters cavity at +L/2 (RHS)
-
-% Propagation from +L/2 (RHS) to -L/2 (LHS)
-[step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
-
-% Beam interacts with mirror 2 (LHS) mirror at -L/2
-E = E.*cmask2.*rmask2;
-
-plot_intensity(E, consts, Z_traveled, Z_position, step, X, Y, x_circ2, y_circ2); % take a look at the beam
-
-% --------------------------------(2)----------------------------------- %
-
-% Propagation from -L/2 back to +L/2
-[step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
-
-% Beam interacts with mirror 1 (RHS) mirror at +L/2
-E = E.*cmask1.*rmask1;
-
-plot_intensity(E, consts, Z_traveled, Z_position, step, X, Y, x_circ2, y_circ2); % take a look at the beam
-
-%%
+%% SIMULATION
 
 % Set how many round trips across the cavity you want to take.
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
 num_round_trips = 100;
-
-% Prepare video writer
-v = VideoWriter('cavity_propagation_3D_tight.mp4','MPEG-4');
-v.FrameRate = 10; % adjust playback speed
-open(v);
 
 P0 = sum(sum(abs(E).^2)); % initial power
 
@@ -133,12 +111,11 @@ for i = 1:num_round_trips
     hold on;
     plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2); % plot mirror outline
     hold off;
-    % Force white background
-    set(gcf,'Color','w'); % figure background
-    set(gca,'Color','w'); % axes background
+    set(gcf,'Color','w'); % white figure background
+    set(gca,'Color','w'); % white axes background
     axis('square')
     axis tight;
-    view(2)
+    view(2) % 2D view
     getframe();
 
     % Capture frame
@@ -151,49 +128,76 @@ for i = 1:num_round_trips
     BeamWidth(i) = sum(sum(sqrt(X.^2+Y.^2).*abs(E).^2))/P0;
 end
 
-close(v);
-disp('Animation saved as cavity_propagation.mp4');
+close(v); % save video
 
 %% Post-processing
 
 % Trackers used for both numeric and analytic
-dz_post = .5; % little steps across the cavity  
-zs = -L/2:dz_post:+L/2; % z positions, measured relative to the cavity center, z = 0, [m]
+dz_post = .1; % little steps across the cavity  
+zs = -L/2 : dz_post : +L/2; % z positions, measured relative to the cavity center, z = 0, [m]
 numSteps = length(zs); % number of steps to be taken for one trip across the cavity
 
 % Numeric
 H_post = exp(1i/(2*k0)*dz_post*(KX.^2+KY.^2)); % compute free space transfer function for a shorter distance
-E0_num = E; % Use the last saved E, numeric complex field at current plane
-dz_post = 1; % little steps across the cavity    
+E0_num = E; % Use the last saved E, numeric complex field at current plane   
 Es_num = cell(1, numSteps); wz_num = zeros(1, numSteps); % initialize cell arrays to save numeric results
-[Es_num, wz_num] = Save_Numeric_Results(E0_num, Es_num, wz_num, numSteps, H_post, X, Y, dx, dy);  
-I_num = cellfun(@(E) abs(E).^2, Es_num, 'UniformOutput', false); % numeric intensity
-I0_num = abs(E0_num).^2; 
+[Es_num, wz_num, I0s] = Save_Numeric_Results(E0_num, Es_num, wz_num, numSteps, H_post, X, Y, dx, dy);  
+%I_num = cellfun(@(E) abs(E).^2, Es_num, 'UniformOutput', false); % numeric intensity 
 w0_num = min(wz_num); % numeric waist
 fprintf('Numeric w0: %.3g mm \n', w0_num*10^3);
-I_num = I0_num*exp(-2*(X.^2+Y.^2)/w0_num^2); % intensity at numeric 1/e^2 waist
+zr_num = pi * w0_num^2 / lambda; % Rayleigh range from the analytic waist
+wz_num = w0_num * sqrt(1+(zs./zr_num).^2); % analytic spot size along zs
+waist_index = find(wz_num == min(wz_num), 1); % index of numeric waist
+I0 = abs(Es_num{waist_index}).^2; % numeric intensity at waist
+I_num = I0* (w0_num^2/wz_num.^2) * exp(-2*(X.^2+Y.^2)./wz_num.^2); % numeric intensity, I(r,z)
 
 % Analytic 
 R = Rc1; % set which mirror the beam is arriving at
 w0_ana = sqrt(lambda*L/pi * sqrt(g1*g2*(1-g1*g2)/(g1+g2-2*g1*g2)^2)); % analytic beam waist from cavity geometry
 fprintf('Analytic w0: %.3g mm \n', w0_ana*10^3);
-zr = pi * w0_ana^2 / lambda; % Rayleigh range from the numeric waist
+zr = pi * w0_ana^2 / lambda; % Rayleigh range from the analytic waist
 wz_ana = w0_ana * sqrt(1+(zs./zr).^2); % analytic spot size along zs
-q0 = 1i*(pi*w0_ana^2)/lambda;
+q0 = 1i*(pi*w0_ana^2)/lambda; % initial complex radius, evaluated at the center of the cavity, i.e. at the beam waist
 qz = R - (pi*wz_ana.^2)/(1i*lambda); % complex radius of curvature
 
-% for i = 1:length(qz)
-%     qzi = qz(i);
-%     %E_ana{i} = 1/qzi * exp(-1i*k0 * (X.^2+Y.^2)/(2*qzi)); % analytical field at point z
-%     %I_ana{i} = cellfun(@(E) abs(E).^2, E_ana, 'UniformOutput', false); % analytic intensity
-% end
+%E_ana = 1/q0 * exp(-1i*k0 * (X.^2+Y.^2)/(2*q0)); % analytical field at beam waist
+
+
+%%
+% --- Analytic spot size and on-axis intensity ---
+Pnum0 = sum(abs(E(:)).^2) * dx * dy;   % total input power (should be const)
+
+% Analytic waist and Rayleigh range (you already have these in your script)
+zr = pi * w0_ana^2 / lambda;
+wz_ana = w0_ana * sqrt(1 + (zs./zr).^2);
+
+% Analytic on-axis intensity
+I0_ana = (2 * Pnum0) ./ (pi * wz_ana.^2);
+
+% --- Plot comparison ---
+figure;
+yyaxis left
+plot(zs, wz_num*1e3, 'bo-', 'DisplayName','Numeric w(z)');
+hold on
+plot(zs, wz_ana*1e3, 'r--', 'DisplayName','Analytic w(z)');
+ylabel('Spot size [mm]');
+
+yyaxis right
+plot(zs, I0s, 'kx-', 'DisplayName','Numeric I0(z)');
+plot(zs, I0_ana, 'g--', 'DisplayName','Analytic I0(z)');
+ylabel('On-axis Intensity [arb units]');
+
+xlabel('Propagation distance z [m]');
+legend('show');
+grid on
+
 
 %% Graphing
 
 figure;
-plot(zs, +wz_ana, 'b', 'LineWidth', 1.5, 'DisplayName', 'Analytic'); hold on; 
+plot(zs, +wz_ana, 'b', 'LineWidth', 1.5, 'DisplayName', 'Analytic w(z)'); hold on; 
 plot(zs, -wz_ana, 'b', 'LineWidth', 1.5, 'HandleVisibility', 'off');
-plot(zs, +wz_num, 'r', 'LineWidth', 1.5, 'DisplayName', 'Numeric'); hold on; 
+plot(zs, +wz_num, 'r', 'LineWidth', 1.5, 'DisplayName', 'Numeric w(z)'); hold on; 
 plot(zs, -wz_num, 'r', 'LineWidth', 1.5, 'HandleVisibility', 'off');
 xlabel('z [m]');
 ylabel('Transverse position [m]');
