@@ -16,6 +16,7 @@ N = 2048; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 2*D1; % domain half width, [m]
 CFL = 0.0625;
+Omega = 0; % angular rotation between spacecraft frame and inertial, geocentric frame, [rad/s]
 
 % Grid
 x = linspace(-W,W,N);
@@ -56,8 +57,9 @@ kx = (2*pi/(N*dx)) * (-N/2 : N/2-1);   % range from -pi/dx to +pi/dx
 ky = kx;  % symmetric, since dx = dy
 [KX, KY] = meshgrid(kx, ky);
 
-% Free space transfer function of propagation 
-H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2));
+% Propagation operators
+H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2)); % free space transfer function of propagation 
+R = @(z1, z2) exp(-i*KX*Omega/consts.c*1/2*(z2+z1)*(z2-z1)*dz); % rotation operator
 
 % Mirror phase screens
 rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
@@ -109,16 +111,16 @@ plot_intensity(E, consts, Z_traveled, Z_position, step, X, Y, x_circ2, y_circ2);
 num_round_trips = 100;
 
 % Prepare video writer
-v = VideoWriter('cavity_propagation_3D_tight.mp4','MPEG-4');
+v = VideoWriter('cavity_propagation_rotating.mp4','MPEG-4');
 v.FrameRate = 10; % adjust playback speed
 open(v);
 
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R);
     E = E.*cmask2.*rmask2;
-    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R);
     E = E.*cmask1.*rmask1;
     
     % Visualization
@@ -147,12 +149,11 @@ for i = 1:num_round_trips
 
     % Rescale 
     Pk(i) = max(max(abs(E).^2)); % peak intensity at this point
-    E = E*sqrt(P0/sum(sum(abs(E).^2))); % rescale E
+    E = E*sqrt(P0/sum(sum(abs(E).^2))); % rescale E to have no diffraction losses
     BeamWidth(i) = sum(sum(sqrt(X.^2+Y.^2).*abs(E).^2))/P0;
 end
 
 close(v);
-disp('Animation saved as cavity_propagation.mp4');
 
 %% Post-processing
 
