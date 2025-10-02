@@ -1,4 +1,4 @@
-function [Es, wzs, I0s] = Save_Numeric_Results(E, Es, wzs, numSteps, H, X, Y, dx, dy)    
+function [Es, wzs] = Save_Numeric_Results(E, Es, wzs, numSteps, H, X, Y, dx, dy)    
 
     for n = 1:numSteps
         
@@ -22,7 +22,7 @@ function [Es, wzs, I0s] = Save_Numeric_Results(E, Es, wzs, numSteps, H, X, Y, dx
         wzs(n) = 2 * sigma_r_num; % 1/e^2 waist at this point
 
         % Peak intensity
-        I0s(n) = max(I_num(:)); 
+        %I0s(n) = max(I_num(:)); 
 
     end
 

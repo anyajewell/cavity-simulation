@@ -38,7 +38,7 @@ theta = linspace(0,2*pi,400);
 x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.002; % input beam waist, [m]
+w0 = 0.001; % input beam waist, [m]
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
 I0 = 0.5*consts.eps0*consts.c*abs(E0).^2; % initial intensity, [W/m^2]
@@ -49,7 +49,7 @@ g2 = 1 - L/Rc2; % stability paramter 2
 g = g1*g2; % stability product, 0 < g < 1 for a stable cavity
 
 % Set up frequency space
-kx = (2*pi/(N*dx)) * (-N/2 : N/2-1);   % range from -pi/dx to +pi/dx
+kx = (2*pi/(N*dx)) * (-N/2 : N/2-1); % range from -pi/dx to +pi/dx
 ky = kx;  % symmetric, since dx = dy
 [KX, KY] = meshgrid(kx, ky);
 
@@ -133,34 +133,42 @@ close(v); % save video
 %% Post-processing
 
 % Trackers used for both numeric and analytic
-dz_post = .1; % little steps across the cavity  
+dz_post = 1; % little steps across the cavity  
 zs = -L/2 : dz_post : +L/2; % z positions, measured relative to the cavity center, z = 0, [m]
 numSteps = length(zs); % number of steps to be taken for one trip across the cavity
 
 % Numeric
 H_post = exp(1i/(2*k0)*dz_post*(KX.^2+KY.^2)); % compute free space transfer function for a shorter distance
 E0_num = E; % Use the last saved E, numeric complex field at current plane   
-Es_num = cell(1, numSteps); wz_num = zeros(1, numSteps); % initialize cell arrays to save numeric results
-[Es_num, wz_num, I0s] = Save_Numeric_Results(E0_num, Es_num, wz_num, numSteps, H_post, X, Y, dx, dy);  
-%I_num = cellfun(@(E) abs(E).^2, Es_num, 'UniformOutput', false); % numeric intensity 
-w0_num = min(wz_num); % numeric waist
-fprintf('Numeric w0: %.3g mm \n', w0_num*10^3);
-zr_num = pi * w0_num^2 / lambda; % Rayleigh range from the analytic waist
+Es_num = cell(1, numSteps); wzs = zeros(1, numSteps); % initialize cell arrays to save numeric results
+[Es_num, wzs] = Save_Numeric_Results(E0_num, Es_num, wzs, numSteps, H_post, X, Y, dx, dy);  
+waist_index = find(wzs == min(wzs), 1); % select where the numeric waist occurs
+I = abs(Es_num{waist_index}).^2; % numeric intensity at waist
+I0 = max(I(:)); % on-axis peak intensity
+R = sqrt(X.^2 + Y.^2); % radial coordinate grid
+[theta, rvals] = cart2pol(X, Y); % radially average intensity to smooth noise/asymmetry
+dr = dx; rvec = 0:dr:max(R(:)); % incremental radii of the beam, for options
+Iradial = zeros(size(rvec));
+
+for k = 1:length(rvec)-1
+    mask = (R >= rvec(k)) & (R < rvec(k+1));
+    Iradial(k) = mean(I(mask)); % symmetric intensity profile
+end
+
+target = I0*exp(-2); % target is 1/e^2 of the max instensity, can set different target
+[~,idx] = min(abs(Iradial - target));
+w0_num = rvec(idx); % numeric beam waist
+fprintf('Numeric w0: %.3g mm \n', w0_num*1e3);
+zr_num = pi * w0_num^2 / lambda; % numeric Rayleigh range
 wz_num = w0_num * sqrt(1+(zs./zr_num).^2); % numeric spot size w(z)
 
-% Create numerical intensity cube across the cavity, size = N x N x numSteps
-% I0s3   = reshape(I0s,   1, 1, []);   % 1×1×numSteps
-% wz_num3 = reshape(wz_num, 1, 1, []); % 1×1×numSteps
-% R2 = X.^2 + Y.^2; % Ny×Nx
-% R2 = R2(:, :, ones(1,numSteps)); % replicate along 3rd dim
-% I_num = I0s3 .* (w0_num^2 ./ wz_num3.^2) .* exp(-2 * R2 ./ wz_num3.^2); % numeric intensity, I(r,z)
 
 % Analytic 
 R = Rc1; % set which mirror the beam is arriving at
 w0_ana = sqrt(lambda*L/pi * sqrt(g1*g2*(1-g1*g2)/(g1+g2-2*g1*g2)^2)); % analytic beam waist from cavity geometry
 fprintf('Analytic w0: %.3g mm \n', w0_ana*10^3);
 zr = pi * w0_ana^2 / lambda; % Rayleigh range from the analytic waist
-wz_ana = w0_ana * sqrt(1+(zs./zr).^2); % analytic spot size w(z)
+wz_ana = w0_ana * sqrt(1+(zs./zr).^2); % analytic spot size along zs
 q0 = 1i*(pi*w0_ana^2)/lambda; % initial complex radius, evaluated at the center of the cavity, i.e. at the beam waist
 qz = R - (pi*wz_ana.^2)/(1i*lambda); % complex radius of curvature
 
@@ -182,5 +190,3 @@ axis tight;
 
 
 %% Graveyard
-waist_index = find(wz_num == min(wz_num), 1); % index of numeric waist
-I0 = abs(Es_num{waist_index}).^2; % numeric intensity at waist

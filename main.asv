@@ -38,7 +38,7 @@ theta = linspace(0,2*pi,400);
 x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.002; % input beam waist, [m]
+w0 = 0.001; % input beam waist, [m]
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
 I0 = 0.5*consts.eps0*consts.c*abs(E0).^2; % initial intensity, [W/m^2]
@@ -49,7 +49,7 @@ g2 = 1 - L/Rc2; % stability paramter 2
 g = g1*g2; % stability product, 0 < g < 1 for a stable cavity
 
 % Set up frequency space
-kx = (2*pi/(N*dx)) * (-N/2 : N/2-1);   % range from -pi/dx to +pi/dx
+kx = (2*pi/(N*dx)) * (-N/2 : N/2-1); % range from -pi/dx to +pi/dx
 ky = kx;  % symmetric, since dx = dy
 [KX, KY] = meshgrid(kx, ky);
 
@@ -133,23 +133,36 @@ close(v); % save video
 %% Post-processing
 
 % Trackers used for both numeric and analytic
-dz_post = .1; % little steps across the cavity  
+dz_post = 1; % little steps across the cavity  
 zs = -L/2 : dz_post : +L/2; % z positions, measured relative to the cavity center, z = 0, [m]
 numSteps = length(zs); % number of steps to be taken for one trip across the cavity
 
 % Numeric
 H_post = exp(1i/(2*k0)*dz_post*(KX.^2+KY.^2)); % compute free space transfer function for a shorter distance
 E0_num = E; % Use the last saved E, numeric complex field at current plane   
-Es_num = cell(1, numSteps); wz_num = zeros(1, numSteps); % initialize cell arrays to save numeric results
-[Es_num, wz_num, I0s] = Save_Numeric_Results(E0_num, Es_num, wz_num, numSteps, H_post, X, Y, dx, dy);  
-%I_num = cellfun(@(E) abs(E).^2, Es_num, 'UniformOutput', false); % numeric intensity 
-w0_num = min(wz_num); % numeric waist
-fprintf('Numeric w0: %.3g mm \n', w0_num*10^3);
-zr_num = pi * w0_num^2 / lambda; % Rayleigh range from the analytic waist
-wz_num = w0_num * sqrt(1+(zs./zr_num).^2); % analytic spot size along zs
-waist_index = find(wz_num == min(wz_num), 1); % index of numeric waist
-I0 = abs(Es_num{waist_index}).^2; % numeric intensity at waist
-I_num = I0* (w0_num^2/wz_num.^2) * exp(-2*(X.^2+Y.^2)./wz_num.^2); % numeric intensity, I(r,z)
+Es_num = cell(1, numSteps); wzs = zeros(1, numSteps); % initialize cell arrays to save numeric results
+[Es_num, wzs, I0s] = Save_Numeric_Results(E0_num, Es_num, wzs, numSteps, H_post, X, Y, dx, dy);  
+waist_index = find(wzs == min(wzs), 1); % index of numeric waist location
+I = abs(Es_num{waist_index}).^2; % numeric intensity at waist
+I0 = max(I(:)); % on-axis peak intensity
+R = sqrt(X.^2 + Y.^2); % radial coordinate grid
+[theta, rvals] = cart2pol(X, Y); % radially average intensity to smooth noise/asymmetry
+dr = dx; rvec = 0:dr:max(R(:)); % incremental radii of the beam, for options
+Iradial = zeros(size(rvec));
+
+for k = 1:length(rvec)-1
+    mask = (R >= rvec(k)) & (R < rvec(k+1));
+    Iradial(k) = mean(I(mask));
+end
+
+target = I0*exp(-2); % target is 1/e^2 of the max instensity, can set different target
+[~,idx] = min(abs(Iradial - target));
+w0_num = rvec(idx); % 1/e^2 intensity radius
+fprintf('Numeric w0: %.3g mm \n', w0_num*1e3);
+
+zr_num = pi * w0_num^2 / lambda; % numeric Rayleigh range
+wz_num = w0_num * sqrt(1+(zs./zr_num).^2); % numeric spot size w(z)
+
 
 % Analytic 
 R = Rc1; % set which mirror the beam is arriving at
@@ -161,36 +174,6 @@ q0 = 1i*(pi*w0_ana^2)/lambda; % initial complex radius, evaluated at the center 
 qz = R - (pi*wz_ana.^2)/(1i*lambda); % complex radius of curvature
 
 %E_ana = 1/q0 * exp(-1i*k0 * (X.^2+Y.^2)/(2*q0)); % analytical field at beam waist
-
-
-%%
-% --- Analytic spot size and on-axis intensity ---
-Pnum0 = sum(abs(E(:)).^2) * dx * dy;   % total input power (should be const)
-
-% Analytic waist and Rayleigh range (you already have these in your script)
-zr = pi * w0_ana^2 / lambda;
-wz_ana = w0_ana * sqrt(1 + (zs./zr).^2);
-
-% Analytic on-axis intensity
-I0_ana = (2 * Pnum0) ./ (pi * wz_ana.^2);
-
-% --- Plot comparison ---
-figure;
-yyaxis left
-plot(zs, wz_num*1e3, 'bo-', 'DisplayName','Numeric w(z)');
-hold on
-plot(zs, wz_ana*1e3, 'r--', 'DisplayName','Analytic w(z)');
-ylabel('Spot size [mm]');
-
-yyaxis right
-plot(zs, I0s, 'kx-', 'DisplayName','Numeric I0(z)');
-plot(zs, I0_ana, 'g--', 'DisplayName','Analytic I0(z)');
-ylabel('On-axis Intensity [arb units]');
-
-xlabel('Propagation distance z [m]');
-legend('show');
-grid on
-
 
 %% Graphing
 
@@ -205,3 +188,6 @@ title('Beam cross section');
 grid on;
 legend()
 axis tight;
+
+
+%% Graveyard
