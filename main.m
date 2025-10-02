@@ -16,7 +16,7 @@ N = 2048; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 2*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
-Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
+Omega = 1; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
 % Grid
 x = linspace(-W,W,N);
@@ -80,7 +80,7 @@ if ~exist(saveFolder, 'dir')
     mkdir(saveFolder);
 end
 
-fileName = 'test.mp4';
+fileName = 'rotation.mp4';
 filePath = fullfile(saveFolder, fileName);
 v = VideoWriter(filePath, 'MPEG-4');
 v.FrameRate = 10; % adjust playback speed
@@ -96,9 +96,9 @@ num_round_trips = 100;
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R);
     E = E.*cmask2.*rmask2;
-    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R);
     E = E.*cmask1.*rmask1;
     
     % Visualization
@@ -173,7 +173,6 @@ zr = pi * w0_ana^2 / lambda; % Rayleigh range from the analytic waist
 wz_ana = w0_ana * sqrt(1+(zs./zr).^2); % analytic spot size along zs
 q0 = 1i*(pi*w0_ana^2)/lambda; % initial complex radius, evaluated at the center of the cavity, i.e. at the beam waist
 qz = R - (pi*wz_ana.^2)/(1i*lambda); % complex radius of curvature
-
 %E_ana = 1/q0 * exp(-1i*k0 * (X.^2+Y.^2)/(2*q0)); % analytical field at beam waist
 
 %% Graphing

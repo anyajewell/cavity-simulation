@@ -16,6 +16,7 @@ N = 2048; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 2*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
+Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
 % Grid
 x = linspace(-W,W,N);
@@ -53,8 +54,9 @@ kx = (2*pi/(N*dx)) * (-N/2 : N/2-1); % range from -pi/dx to +pi/dx
 ky = kx;  % symmetric, since dx = dy
 [KX, KY] = meshgrid(kx, ky);
 
-% Free space transfer function of propagation 
-H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2));
+% Propagation operators
+H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2)); % free space transfer function of propagation
+R = @(z1, z2) exp(-i*KX*Omega/consts.c*1/2*(z2+z1)*(z2-z1)*dz); % rotation operator
 
 % Mirror phase screens
 rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
@@ -78,7 +80,7 @@ if ~exist(saveFolder, 'dir')
     mkdir(saveFolder);
 end
 
-fileName = 'test.mp4';
+fileName = 'rotation.mp4';
 filePath = fullfile(saveFolder, fileName);
 v = VideoWriter(filePath, 'MPEG-4');
 v.FrameRate = 10; % adjust playback speed
@@ -94,9 +96,9 @@ num_round_trips = 100;
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R);
     E = E.*cmask2.*rmask2;
-    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H);
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R);
     E = E.*cmask1.*rmask1;
     
     % Visualization
@@ -141,8 +143,8 @@ numSteps = length(zs); % number of steps to be taken for one trip across the cav
 H_post = exp(1i/(2*k0)*dz_post*(KX.^2+KY.^2)); % compute free space transfer function for a shorter distance
 E0_num = E; % Use the last saved E, numeric complex field at current plane   
 Es_num = cell(1, numSteps); wzs = zeros(1, numSteps); % initialize cell arrays to save numeric results
-[Es_num, wzs, I0s] = Save_Numeric_Results(E0_num, Es_num, wzs, numSteps, H_post, X, Y, dx, dy);  
-waist_index = find(wzs == min(wzs), 1); % index of numeric waist location
+[Es_num, wzs] = Save_Numeric_Results(E0_num, Es_num, wzs, numSteps, H_post, X, Y, dx, dy);  
+waist_index = find(wzs == min(wzs), 1); % select where the numeric waist occurs
 I = abs(Es_num{waist_index}).^2; % numeric intensity at waist
 I0 = max(I(:)); % on-axis peak intensity
 R = sqrt(X.^2 + Y.^2); % radial coordinate grid
@@ -152,14 +154,13 @@ Iradial = zeros(size(rvec));
 
 for k = 1:length(rvec)-1
     mask = (R >= rvec(k)) & (R < rvec(k+1));
-    Iradial(k) = mean(I(mask));
+    Iradial(k) = mean(I(mask)); % symmetric intensity profile
 end
 
 target = I0*exp(-2); % target is 1/e^2 of the max instensity, can set different target
 [~,idx] = min(abs(Iradial - target));
-w0_num = rvec(idx); % 1/e^2 intensity radius
+w0_num = rvec(idx); % numeric beam waist
 fprintf('Numeric w0: %.3g mm \n', w0_num*1e3);
-
 zr_num = pi * w0_num^2 / lambda; % numeric Rayleigh range
 wz_num = w0_num * sqrt(1+(zs./zr_num).^2); % numeric spot size w(z)
 
@@ -172,7 +173,6 @@ zr = pi * w0_ana^2 / lambda; % Rayleigh range from the analytic waist
 wz_ana = w0_ana * sqrt(1+(zs./zr).^2); % analytic spot size along zs
 q0 = 1i*(pi*w0_ana^2)/lambda; % initial complex radius, evaluated at the center of the cavity, i.e. at the beam waist
 qz = R - (pi*wz_ana.^2)/(1i*lambda); % complex radius of curvature
-
 %E_ana = 1/q0 * exp(-1i*k0 * (X.^2+Y.^2)/(2*q0)); % analytical field at beam waist
 
 %% Graphing
