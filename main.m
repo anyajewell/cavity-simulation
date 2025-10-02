@@ -16,6 +16,7 @@ N = 2048; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 2*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
+Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
 % Grid
 x = linspace(-W,W,N);
@@ -53,8 +54,9 @@ kx = (2*pi/(N*dx)) * (-N/2 : N/2-1); % range from -pi/dx to +pi/dx
 ky = kx;  % symmetric, since dx = dy
 [KX, KY] = meshgrid(kx, ky);
 
-% Free space transfer function of propagation 
-H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2));
+% Propagation operators
+H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2)); % free space transfer function of propagation
+R = @(z1, z2) exp(-i*KX*Omega/consts.c*1/2*(z2+z1)*(z2-z1)*dz); % rotation operator
 
 % Mirror phase screens
 rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
