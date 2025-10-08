@@ -16,7 +16,7 @@ N = 2048; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 2*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
-Omega = 1; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
+Omega = 0.001; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
 % Grid
 x = linspace(-W,W,N);
@@ -29,8 +29,6 @@ dz = L; % make each step a trip across the cavity, [m]
 
 % Derived parameters
 k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
-cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
-cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
 
 % Set up mirror physical parameters for plotting
 r1 = D1/2; % radius of mirror 1
@@ -54,15 +52,17 @@ kx = (2*pi/(N*dx)) * (-N/2 : N/2-1); % range from -pi/dx to +pi/dx
 ky = kx;  % symmetric, since dx = dy
 [KX, KY] = meshgrid(kx, ky);
 
-% Propagation operators
+% Propagation operators, to be used in frequency space
 H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2)); % free space transfer function of propagation
 R = @(z1, z2) exp(-i*KX*Omega/consts.c*1/2*(z2+z1)*(z2-z1)*dz); % rotation operator
 
-% Mirror phase screens
+% Propagation masks: mirror phase screens, clipping masks, and tilting
+% mask, to be used in real space
 rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
 rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
-%rmask1 = exp(1i*k0*(X.^2+Y.^2)/(2*Rc1));
-%rmask2 = exp(1i*k0*(X.^2+Y.^2)/(2*Rc2));
+cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
+cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
+tmask = exp(-2*k0^2*Omega*X./consts.c);
 
 % Simulation settings
 save_interval = 1; % save frequency
@@ -74,13 +74,13 @@ Es = struct(); % initialize a struct for saving intermediate E fields
 
 % Prepare video writer
 todayStr = datestr(now, 'yyyy-mm-dd');
-saveFolder = fullfile('C:\Users\jewellan\Documents\MATLAB\ORACLE\Results', todayStr);
+saveFolder = fullfile('C:\Users\Anya Jewell\Documents\MATLAB\ORACLE\Results', todayStr);
 
 if ~exist(saveFolder, 'dir')
     mkdir(saveFolder);
 end
 
-fileName = 'rotation.mp4';
+fileName = 'Omega0.001.mp4';
 filePath = fullfile(saveFolder, fileName);
 v = VideoWriter(filePath, 'MPEG-4');
 v.FrameRate = 10; % adjust playback speed
@@ -97,9 +97,9 @@ P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
     [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R);
-    E = E.*cmask2.*rmask2;
+    E = E.*cmask2.*rmask2.*tmask;
     [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R);
-    E = E.*cmask1.*rmask1;
+    E = E.*cmask1.*rmask1.*tmask;
     
     % Visualization
     I = 0.5*consts.eps0*consts.c*abs(E).^2;

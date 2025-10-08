@@ -29,8 +29,6 @@ dz = L; % make each step a trip across the cavity, [m]
 
 % Derived parameters
 k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
-cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
-cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
 
 % Set up mirror physical parameters for plotting
 r1 = D1/2; % radius of mirror 1
@@ -61,8 +59,8 @@ R = @(z1, z2) exp(-i*KX*Omega/consts.c*1/2*(z2+z1)*(z2-z1)*dz); % rotation opera
 % Mirror phase screens
 rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
 rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
-%rmask1 = exp(1i*k0*(X.^2+Y.^2)/(2*Rc1));
-%rmask2 = exp(1i*k0*(X.^2+Y.^2)/(2*Rc2));
+cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
+cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
 
 % Simulation settings
 save_interval = 1; % save frequency
@@ -74,7 +72,7 @@ Es = struct(); % initialize a struct for saving intermediate E fields
 
 % Prepare video writer
 todayStr = datestr(now, 'yyyy-mm-dd');
-saveFolder = fullfile('C:\Users\jewellan\Documents\MATLAB\ORACLE\Results', todayStr);
+saveFolder = fullfile('C:\Users\Anya Jewell\Documents\MATLAB\ORACLE\Results', todayStr);
 
 if ~exist(saveFolder, 'dir')
     mkdir(saveFolder);
@@ -97,7 +95,7 @@ P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
     [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R);
-    E = E.*cmask2.*rmask2;
+    E = E.*cmask2.*rmask2.*tmask;
     [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R);
     E = E.*cmask1.*rmask1;
     
