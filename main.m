@@ -62,7 +62,7 @@ rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
 rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
 cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
 cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
-tmask = exp(-2*k0^2*Omega*X./consts.c);
+tmask = exp(k0*Omega*X./consts.c)*dz;
 
 % Simulation settings
 save_interval = 1; % save frequency
