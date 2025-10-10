@@ -54,7 +54,7 @@ ky = kx;  % symmetric, since dx = dy
 
 % Propagation operators, to be used in frequency space
 H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2)); % free space transfer function of propagation
-R = @(z1, z2) exp(-i*KX*Omega/consts.c*1/2*(z2+z1)*(z2-z1)*dz); % rotation operator
+R = @(z1, z2) exp(-i*KX*Omega/consts.c*1/2*(z2+z1)*dz); % rotation operator, "shearing"
 
 % Propagation masks: mirror phase screens, clipping masks, and tilting
 % mask, to be used in real space
@@ -62,7 +62,7 @@ rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
 rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
 cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
 cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
-tmask = exp(-2*k0^2*Omega*X./consts.c);
+tmask = exp(-2*k0^2*Omega*X./consts.c*dz);
 
 % Simulation settings
 save_interval = 1; % save frequency
@@ -74,13 +74,13 @@ Es = struct(); % initialize a struct for saving intermediate E fields
 
 % Prepare video writer
 todayStr = datestr(now, 'yyyy-mm-dd');
-saveFolder = fullfile('C:\Users\Anya Jewell\Documents\MATLAB\ORACLE\Results', todayStr);
+saveFolder = fullfile('C:\Users\jewellan\Documents\MATLAB\ORACLE\Results', todayStr);
 
 if ~exist(saveFolder, 'dir')
     mkdir(saveFolder);
 end
 
-fileName = 'Omega0.001.mp4';
+fileName = 'test.mp4';
 filePath = fullfile(saveFolder, fileName);
 v = VideoWriter(filePath, 'MPEG-4');
 v.FrameRate = 10; % adjust playback speed
