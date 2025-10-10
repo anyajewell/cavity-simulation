@@ -37,7 +37,7 @@ theta = linspace(0,2*pi,400);
 x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.001; % input beam waist, [m]
+w0 = 0.01; % input beam waist, [m]
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
 I0 = 0.5*consts.eps0*consts.c*abs(E0).^2; % initial intensity, [W/m^2]
@@ -62,7 +62,9 @@ rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
 rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
 cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
 cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
-tmask = exp(k0^2*Omega*X./consts.c)*dz;
+%tmask = exp(k0*Omega*X./(1i*consts.c)*dz); % derived by me
+%tmask = 1; % turn off t mask
+tmask = exp(2*k0^2*Omega*X./consts.c*dz); % derived by Dr. Limbach
 
 % Simulation settings
 save_interval = 1; % save frequency
@@ -74,13 +76,13 @@ Es = struct(); % initialize a struct for saving intermediate E fields
 
 % Prepare video writer
 todayStr = datestr(now, 'yyyy-mm-dd');
-saveFolder = fullfile('C:\Users\Anya Jewell\Documents\MATLAB\ORACLE\Results', todayStr);
+saveFolder = fullfile('C:\Users\jewellan\Documents\MATLAB\ORACLE\Results', todayStr);
 
 if ~exist(saveFolder, 'dir')
     mkdir(saveFolder);
 end
 
-fileName = 'Omega0.001.mp4';
+fileName = 'Omega0.001_ANYASMASK.mp4';
 filePath = fullfile(saveFolder, fileName);
 v = VideoWriter(filePath, 'MPEG-4');
 v.FrameRate = 10; % adjust playback speed
@@ -91,7 +93,7 @@ open(v);
 % Set how many round trips across the cavity you want to take.
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
-num_round_trips = 100;
+num_round_trips = 200;
 
 P0 = sum(sum(abs(E).^2)); % initial power
 
