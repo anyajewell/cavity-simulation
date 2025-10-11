@@ -7,28 +7,27 @@ consts.c = 3*10^8; % speed of light, [m/s]
 consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-L = 25; % length of cavity, [m]
+L = 50; % length of cavity, [m]
 D1 = 0.0254/2; % diameter of mirror 1, [m]
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = 50; % radius of curvature for mirror 1, [m]
+Rc1 = 500; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
 N = 2048; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 2*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
-Omega = 0.001; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
+Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
 % Grid
+k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
 x = linspace(-W,W,N);
 y = x;
 dx = x(2) - x(1);
 dy = dx;
 %dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
-dz = L/300; % make each step a trip across the cavity, [m]
+dz = L; % make each step a trip across the cavity, [m]
+%dz = 1;
 [X,Y] = meshgrid(x,y); % space domain
-
-% Derived parameters
-k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
 
 % Set up mirror physical parameters for plotting
 r1 = D1/2; % radius of mirror 1
@@ -37,7 +36,8 @@ theta = linspace(0,2*pi,400);
 x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.01; % input beam waist, [m]
+w0 = 0.001; % input beam waist, [m]
+zr = pi*w0^2/lambda;
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
 I0 = 0.5*consts.eps0*consts.c*abs(E0).^2; % initial intensity, [W/m^2]
@@ -62,11 +62,11 @@ rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
 rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
 cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
 cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
-tmask = exp(k0*Omega*X./(1i*consts.c)*dz); % derived by me
+tmask = exp(k0*Omega*X./(1i*consts.c)*dz); % tilting mask, derived by me
 %tmask = 1; % turn off t mask
 
 % Simulation settings
-save_interval = 10; % save frequency
+save_interval = 1; % save frequency
 step = 0; % initialize step 
 Z_traveled = []; % initialize prop distance array
 Z_position = []; % initialize intra-cavity position array
@@ -81,7 +81,7 @@ if ~exist(saveFolder, 'dir')
     mkdir(saveFolder);
 end
 
-fileName = 'test.mp4';
+fileName = sprintf('Omega=%.3f_L=%.0fkm.mp4', Omega, L);
 filePath = fullfile(saveFolder, fileName);
 v = VideoWriter(filePath, 'MPEG-4');
 v.FrameRate = 10; % adjust playback speed
@@ -143,9 +143,9 @@ for n = 1:num_steps
     end
 
     % Rescale 
-    Pk(n) = max(max(abs(E).^2)); % peak intensity at this point
-    E = E*sqrt(P0/sum(sum(abs(E).^2))); % rescale E
-    BeamWidth(n) = sum(sum(sqrt(X.^2+Y.^2).*abs(E).^2))/P0;
+    % Pk(n) = max(max(abs(E).^2)); % peak intensity at this point
+    % E = E*sqrt(P0/sum(sum(abs(E).^2))); % rescale E
+    % BeamWidth(n) = sum(sum(sqrt(X.^2+Y.^2).*abs(E).^2))/P0;
 end
 
 E = E.*cmask2.*rmask2.*tmask; % beam arrives at the LHS (mirror2)
