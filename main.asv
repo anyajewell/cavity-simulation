@@ -24,7 +24,7 @@ y = x;
 dx = x(2) - x(1);
 dy = dx;
 %dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
-dz = L; % make each step a trip across the cavity, [m]
+dz = L/300; % make each step a trip across the cavity, [m]
 [X,Y] = meshgrid(x,y); % space domain
 
 % Derived parameters
@@ -62,12 +62,11 @@ rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
 rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
 cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
 cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
-%tmask = exp(k0*Omega*X./(1i*consts.c)*dz); % derived by me
+tmask = exp(k0*Omega*X./(1i*consts.c)*dz); % derived by me
 %tmask = 1; % turn off t mask
-tmask = exp(2*k0^2*Omega*X./consts.c*dz); % derived by Dr. Limbach
 
 % Simulation settings
-save_interval = 1; % save frequency
+save_interval = 10; % save frequency
 step = 0; % initialize step 
 Z_traveled = []; % initialize prop distance array
 Z_position = []; % initialize intra-cavity position array
@@ -76,24 +75,88 @@ Es = struct(); % initialize a struct for saving intermediate E fields
 
 % Prepare video writer
 todayStr = datestr(now, 'yyyy-mm-dd');
-saveFolder = fullfile('C:\Users\jewellan\Documents\MATLAB\ORACLE\Results', todayStr);
+saveFolder = fullfile('C:\Users\Anya Jewell\Documents\MATLAB\ORACLE\Results', todayStr);
 
 if ~exist(saveFolder, 'dir')
     mkdir(saveFolder);
 end
 
-fileName = 'Omega0.001_ANYASMASK.mp4';
+fileName = 'test.mp4';
 filePath = fullfile(saveFolder, fileName);
 v = VideoWriter(filePath, 'MPEG-4');
 v.FrameRate = 10; % adjust playback speed
 open(v);
+
+%% SIMULATION, R --> L, one trip across in small steps
+% Just go once across the cavity
+
+P0 = sum(sum(abs(E).^2)); % initial power
+
+% Clip and 
+E = E.*cmask1.*rmask1.*tmask; % beam leaves from the RHS (mirror1)
+
+for n = 1:num_steps
+    step = step + 1;
+    Z_traveled(step) = step*dz; % record total distance propagated so far
+
+    % Record current position within the cavity, AFTER the step has
+    % been taken
+    if step == 1 % this is the first step
+        Z_position(step) = L/2 - dz;
+    else
+        Z_position(step) = Z_position(step-1) - dz;
+    end
+
+    % Propagation
+    FE = fft2(E); % transform beam to frequency domain
+    FE = FE.*fftshift(H).*R(Z_position(step), Z_position(step)-dz); % propagate beam in frequency domain 
+    E = ifft2(FE); % transform back to space domain 
+    E = tmask.*E; % apply the tilting mask
+    
+    % Save E field snapshots and write video frame
+    if mod(step, save_interval) == 0
+        step_label = sprintf('step_%d', step);
+        Es.(step_label) = E; % save intermediate field
+
+    % Visualization
+    I = 0.5*consts.eps0*consts.c*abs(E).^2;
+    surf(X, Y, I/max(I(:)), 'LineStyle','none');
+    ylabel('[m]')
+    xlabel('[m]')
+    title({
+        sprintf('Laser Mode at Z = %.1f m', Z_traveled(step)), ...
+        sprintf('Intra-Cavity Position = %.1f', Z_position(step))
+    })
+    hold on;
+    plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2); % plot mirror outline
+    hold off;
+    set(gcf,'Color','w'); % white figure background
+    set(gca,'Color','w'); % white axes background
+    axis('square')
+    axis tight;
+    view(2) % 2D view
+    getframe();
+
+    % Capture frame
+    frame = getframe(gcf);
+    writeVideo(v, frame);
+    end
+
+    % Rescale 
+    Pk(n) = max(max(abs(E).^2)); % peak intensity at this point
+    E = E*sqrt(P0/sum(sum(abs(E).^2))); % rescale E
+    BeamWidth(n) = sum(sum(sqrt(X.^2+Y.^2).*abs(E).^2))/P0;
+end
+
+E = E.*cmask2.*rmask2.*tmask; % beam arrives at the LHS (mirror2)
+close(v); % save video
 
 %% SIMULATION
 
 % Set how many round trips across the cavity you want to take.
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
-num_round_trips = 200;
+num_round_trips = 100;
 
 P0 = sum(sum(abs(E).^2)); % initial power
 
