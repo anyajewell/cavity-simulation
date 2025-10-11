@@ -1,6 +1,6 @@
 % Laser travels from LHS mirror to RHS mirror
 
-function [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask)    
+function [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, cmask_soft)    
 
     for n = 1:num_steps
         

@@ -10,11 +10,11 @@ consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 L = 100; % length of cavity, [m]
 D1 = 0.0254/2; % diameter of mirror 1, [m]
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = 1000; % radius of curvature for mirror 1, [m]
+Rc1 = 2000; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
-N = 2048; % number of mesh points along each dim of mesh grid
+N = 1000; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
-W = 2*D1; % domain half width, [m]
+W = 4*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
 Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
@@ -36,7 +36,7 @@ theta = linspace(0,2*pi,400);
 x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.1; % input beam waist, [m]
+w0 = 0.001; % input beam waist, [m]
 zr = pi*w0^2/lambda;
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
