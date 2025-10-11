@@ -7,10 +7,10 @@ consts.c = 3*10^8; % speed of light, [m/s]
 consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-L = 50; % length of cavity, [m]
+L = 100; % length of cavity, [m]
 D1 = 0.0254/2; % diameter of mirror 1, [m]
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = 500; % radius of curvature for mirror 1, [m]
+Rc1 = 1000; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
 N = 2048; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
@@ -24,7 +24,7 @@ x = linspace(-W,W,N);
 y = x;
 dx = x(2) - x(1);
 dy = dx;
-%dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
+dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
 dz = L; % make each step a trip across the cavity, [m]
 %dz = 1;
 [X,Y] = meshgrid(x,y); % space domain
@@ -36,7 +36,7 @@ theta = linspace(0,2*pi,400);
 x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.001; % input beam waist, [m]
+w0 = 0.1; % input beam waist, [m]
 zr = pi*w0^2/lambda;
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
@@ -62,8 +62,16 @@ rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
 rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
 cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
 cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
+%cmask1 = 1; cmask2 = cmask1; % turn off clipping
 tmask = exp(k0*Omega*X./(1i*consts.c)*dz); % tilting mask, derived by me
 %tmask = 1; % turn off t mask
+
+% Set up an absorbing mask
+ra = sqrt(X.^2 + Y.^2); ra_norm = ra / W; amask = ones(size(X));
+edge_start = 0.8; % start absorbing after 80% of domain
+mask_zone = ra_norm > edge_start;
+amask(mask_zone) = cos((pi/2) * (ra_norm(mask_zone) - edge_start) / (1 - edge_start)).^2;
+amask(ra_norm >= 1) = 0; % fully absorb at edge
 
 % Simulation settings
 save_interval = 1; % save frequency
@@ -157,13 +165,13 @@ close(v); % save video
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
 num_round_trips = 100;
-
+%E = E.*cmask1; % clip the beam before it leaves
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R);
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask);
     E = E.*cmask2.*rmask2.*tmask;
-    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R);
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask);
     E = E.*cmask1.*rmask1.*tmask;
     
     % Visualization

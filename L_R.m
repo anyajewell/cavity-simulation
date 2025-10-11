@@ -1,6 +1,6 @@
 % Laser travels from LHS mirror to RHS mirror
 
-function [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R)    
+function [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask)    
 
     for n = 1:num_steps
         
@@ -18,7 +18,8 @@ function [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_positio
         % Propagation    
         FE = fft2(E); % transform beam to frequency domain
         FE = FE.*fftshift(H).*R(Z_position(step), Z_position(step)-dz); % propagate beam in frequency domain
-        E = ifft2(FE); % transform back to space domain 
+        E = ifft2(FE); % transform back to space domain
+        E = E.*amask; % absorb energy at boundaries
         
         % Save E field snapshots
         if mod(step, save_interval) == 0
