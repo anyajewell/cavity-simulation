@@ -7,12 +7,12 @@ consts.c = 3*10^8; % speed of light, [m/s]
 consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-L = 500; % length of cavity, [m]
+L = 1000; % length of cavity, [m]
 D1 = 0.0254/2; % diameter of mirror 1, [m]
 D2 = D1; % diameter of mirror 2, [m]
 Rc1 = 2000; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
-N = 2048; % number of mesh points along each dim of mesh grid
+N = 1000; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 4*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
@@ -26,7 +26,7 @@ dx = x(2) - x(1);
 dy = dx;
 dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
 dz = L; % make each step a trip across the cavity, [m]
-%dz = 1;
+dz = .1;
 [X,Y] = meshgrid(x,y); % space domain
 
 % Set up mirror physical parameters for plotting
@@ -72,6 +72,7 @@ edge_start = 0.8; % start absorbing after 80% of domain
 mask_zone = ra_norm > edge_start;
 amask(mask_zone) = cos((pi/2) * (ra_norm(mask_zone) - edge_start) / (1 - edge_start)).^2;
 amask(ra_norm >= 1) = 0; % fully absorb at edge
+%amask = 1;
 
 % Simulation settings
 save_interval = 1; % save frequency
@@ -119,7 +120,7 @@ for n = 1:num_steps
     FE = fft2(E); % transform beam to frequency domain
     FE = FE.*fftshift(H).*R(Z_position(step), Z_position(step)-dz); % propagate beam in frequency domain 
     E = ifft2(FE); % transform back to space domain 
-    E = tmask.*E; % apply the tilting mask
+    E = tmask.*E.*amask; % apply the tilting mask
     
     % Save E field snapshots and write video frame
     if mod(step, save_interval) == 0
@@ -165,13 +166,13 @@ close(v); % save video
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
 num_round_trips = 100;
-%E = E.*cmask1; % clip the beam before it leaves
+E = E.*cmask1; % clip the beam before it leaves
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask);
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, consts);
     E = E.*cmask2.*rmask2.*tmask;
-    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask);
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, consts);
     E = E.*cmask1.*rmask1.*tmask;
     
     % Visualization

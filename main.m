@@ -8,13 +8,14 @@ consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
 L = 100; % length of cavity, [m]
-D1 = 0.0254/2; % diameter of mirror 1, [m]
+%D1 = 0.0254/2; % diameter of mirror 1, [m]
+D1 = 0.0254;
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = 2000; % radius of curvature for mirror 1, [m]
+Rc1 = 200; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
-N = 1000; % number of mesh points along each dim of mesh grid
+N = 2048; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
-W = 4*D1; % domain half width, [m]
+W = 5*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
 Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
@@ -26,7 +27,7 @@ dx = x(2) - x(1);
 dy = dx;
 dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
 dz = L; % make each step a trip across the cavity, [m]
-%dz = 1;
+%dz = .1;
 [X,Y] = meshgrid(x,y); % space domain
 
 % Set up mirror physical parameters for plotting
@@ -67,11 +68,43 @@ tmask = exp(k0*Omega*X./(1i*consts.c)*dz); % tilting mask, derived by me
 %tmask = 1; % turn off t mask
 
 % Set up an absorbing mask
-ra = sqrt(X.^2 + Y.^2); ra_norm = ra / W; amask = ones(size(X));
-edge_start = 0.8; % start absorbing after 80% of domain
-mask_zone = ra_norm > edge_start;
-amask(mask_zone) = cos((pi/2) * (ra_norm(mask_zone) - edge_start) / (1 - edge_start)).^2;
-amask(ra_norm >= 1) = 0; % fully absorb at edge
+% --- Absorbing mask B: radial profile smoothed with separable Gaussian convolution ---
+% Tunable params
+taper_width_m = 0.30 * W;   % make this large (0.25-0.40 * W)
+inner_radius = W - taper_width_m;
+outer_radius = W;           % full absorb at W
+poly_power = 2;             % polynomial fall (1 linear, 2 quadratic, etc.)
+
+% Make base mask (polynomial roll)
+ra = sqrt(X.^2 + Y.^2);
+amask_base = ones(size(ra));
+zone = (ra > inner_radius) & (ra < outer_radius);
+s = (ra(zone) - inner_radius) ./ (outer_radius - inner_radius); % 0..1
+amask_base(zone) = (1 - s).^poly_power;
+amask_base(ra >= outer_radius) = 0;
+amask = 1;
+
+% Gaussian smoothing by 1D separable kernel (cheap & robust)
+% choose sigma in grid points (not meters). More sigma => smoother.
+sigma_m = 0.08 * W;                      % smoothing width in meters (try 0.05-0.12*W)
+sigma_px = max(1, round(sigma_m / dx));  % convert to pixels
+% Create 1D Gaussian kernel
+k_half = ceil(4 * sigma_px);
+xk = -k_half:k_half;
+g1d = exp( - (xk.^2) / (2 * sigma_px^2) );
+g1d = g1d / sum(g1d); % normalize
+
+% separable convolution: first along x, then y
+amask_sm = conv2(g1d, g1d, amask_base, 'same');
+
+% enforce bounds and numerical floor
+amask_sm(amask_sm<1e-12) = 0;
+amask = amask_sm;
+
+% visualize
+figure(101); imagesc(x, y, amask); axis equal tight; colorbar;
+title(sprintf('Smoothed mask (taper %.3fm, sigma_px=%d)', taper_width_m, sigma_px));
+drawnow;
 
 % Simulation settings
 save_interval = 1; % save frequency
@@ -119,7 +152,7 @@ for n = 1:num_steps
     FE = fft2(E); % transform beam to frequency domain
     FE = FE.*fftshift(H).*R(Z_position(step), Z_position(step)-dz); % propagate beam in frequency domain 
     E = ifft2(FE); % transform back to space domain 
-    E = tmask.*E; % apply the tilting mask
+    E = tmask.*E.*amask; % apply the tilting mask
     
     % Save E field snapshots and write video frame
     if mod(step, save_interval) == 0
@@ -165,13 +198,13 @@ close(v); % save video
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
 num_round_trips = 100;
-%E = E.*cmask1; % clip the beam before it leaves
+E = E.*cmask1; % clip the beam before it leaves
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask);
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, consts);
     E = E.*cmask2.*rmask2.*tmask;
-    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask);
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, consts);
     E = E.*cmask1.*rmask1.*tmask;
     
     % Visualization
@@ -190,6 +223,8 @@ for i = 1:num_round_trips
     set(gca,'Color','w'); % white axes background
     axis('square')
     axis tight;
+    ylim([-2*D1, 2*D1])
+    xlim([-2*D1, 2*D1])
     view(2) % 2D view
     getframe();
 

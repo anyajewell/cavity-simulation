@@ -1,6 +1,6 @@
 % Laser travels from LHS mirror to RHS mirror
 
-function [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, cmask_soft)    
+function [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, consts)    
 
     for n = 1:num_steps
         
@@ -21,12 +21,12 @@ function [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_positio
         E = ifft2(FE); % transform back to space domain
         E = E.*amask; % absorb energy at boundaries
         
-        % Save E field snapshots
-        if mod(step, save_interval) == 0
-            step_label = sprintf('step_%d', step);
-            Es.(step_label) = E; % save intermediate field
-        end
-    
+        % % Save E field snapshots
+        % if mod(step, save_interval) == 0
+        %     step_label = sprintf('step_%d', step);
+        %     Es.(step_label) = E; % save intermediate field
+        % end
+        % 
     end
 
 end
