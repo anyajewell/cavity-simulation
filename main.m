@@ -7,15 +7,15 @@ consts.c = 3*10^8; % speed of light, [m/s]
 consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-L = 100; % length of cavity, [m]
+L = 400; % length of cavity, [m]
 %D1 = 0.0254/2; % diameter of mirror 1, [m]
 D1 = 0.0254;
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = 200; % radius of curvature for mirror 1, [m]
+Rc1 = 800; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
 N = 2048; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
-W = 5*D1; % domain half width, [m]
+W = 8*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
 Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
@@ -122,7 +122,7 @@ if ~exist(saveFolder, 'dir')
     mkdir(saveFolder);
 end
 
-fileName = sprintf('Omega=%.3f_L=%.0fkm.mp4', Omega, L);
+fileName = sprintf('Omega=%.3f_L=%.0fkm_Rc=%.0f.mp4', Omega, L, Rc1);
 filePath = fullfile(saveFolder, fileName);
 v = VideoWriter(filePath, 'MPEG-4');
 v.FrameRate = 10; % adjust playback speed
