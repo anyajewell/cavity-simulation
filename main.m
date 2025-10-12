@@ -7,12 +7,12 @@ consts.c = 3*10^8; % speed of light, [m/s]
 consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-L = 100; % length of cavity, [m]
+L = 500; % length of cavity, [m]
 D1 = 0.0254/2; % diameter of mirror 1, [m]
 D2 = D1; % diameter of mirror 2, [m]
 Rc1 = 2000; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
-N = 1000; % number of mesh points along each dim of mesh grid
+N = 256; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 4*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
@@ -25,7 +25,8 @@ y = x;
 dx = x(2) - x(1);
 dy = dx;
 dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
-dz = L; % make each step a trip across the cavity, [m]
+dz = 2*k0*dx^2/pi;
+%dz = L; % make each step a trip across the cavity, [m]
 %dz = 1;
 [X,Y] = meshgrid(x,y); % space domain
 
@@ -47,14 +48,63 @@ g1 = 1 - L/Rc1; % stability parameter 1
 g2 = 1 - L/Rc2; % stability paramter 2
 g = g1*g2; % stability product, 0 < g < 1 for a stable cavity
 
-% Set up frequency space
-kx = (2*pi/(N*dx)) * (-N/2 : N/2-1); % range from -pi/dx to +pi/dx
-ky = kx;  % symmetric, since dx = dy
+% % Set up frequency space
+% kx = (2*pi/(N*dx)) * (-N/2 : N/2-1); % range from -pi/dx to +pi/dx
+% ky = kx;  % symmetric, since dx = dy
+% [KX, KY] = meshgrid(kx, ky);
+% 
+% % Propagation operators, to be used in frequency space
+% H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2)); % free space transfer function of propagation
+% R = @(z1, z2) exp(-i*KX*Omega/consts.c*1/2*(z2+z1)*dz); % rotation operator
+
+% Padding grid setup
+padFactor = 2;
+Nxp = padFactor * N;
+Nyp = Nxp; % same in both directions
+Lxp = padFactor * 2 * W;
+Lyp = Lxp;
+dxp = Lxp / Nxp;
+dyp = Lyp / Nyp;
+
+% Coordinate arrays (real space)
+xp = (-Nxp/2 : Nxp/2-1) * dxp;
+yp = xp;
+
+% Frequency grid
+dkx = 2*pi / Lxp;
+dky = 2*pi / Lyp;
+kx = (-Nxp/2 : Nxp/2-1) * dkx;
+ky = kx;
+kx = fftshift(kx);
+ky = fftshift(ky);
 [KX, KY] = meshgrid(kx, ky);
 
-% Propagation operators, to be used in frequency space
-H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2)); % free space transfer function of propagation
+H = exp(1i/(2*k0) * dz * (KX.^2 + KY.^2)); % propagation operator in frequency space
 R = @(z1, z2) exp(-i*KX*Omega/consts.c*1/2*(z2+z1)*dz); % rotation operator
+
+% compute radial coordinate for padded grid
+[xp_grid, yp_grid] = meshgrid(xp, yp);   % xp, yp already computed
+ra = sqrt(xp_grid.^2 + yp_grid.^2);
+ra_norm = ra / max(abs(xp));   % normalized to padded half-width
+
+edge_start = 0.7;  % start absorbing at 70% of padded half-width (tune)
+edge_end   = 0.95; % finish absorbing at 95%
+amask_pad = ones(size(ra));
+mask_zone = (ra_norm > edge_start) & (ra_norm < edge_end);
+amask_pad(mask_zone) = 0.5 * (1 + cos(pi * (ra_norm(mask_zone)-edge_start)/(edge_end-edge_start)));
+amask_pad(ra_norm >= edge_end) = 0;
+
+% Pack everything in a struct for easy passing
+grids = struct( ...
+    'x', x, 'y', y, ...
+    'xp', xp, 'yp', yp, ...
+    'kx', kx, 'ky', ky, ...
+    'KX', KX, 'KY', KY, ...
+    'H', H, ...
+    'Nx', N, 'Ny', N, ...
+    'Nxp', Nxp, 'Nyp', Nyp, ...
+    'padFactor', padFactor);
+grids.amask_pad = amask_pad;
 
 % Propagation masks: mirror phase screens, clipping masks, and tilting
 % mask, to be used in real space
@@ -72,6 +122,7 @@ edge_start = 0.8; % start absorbing after 80% of domain
 mask_zone = ra_norm > edge_start;
 amask(mask_zone) = cos((pi/2) * (ra_norm(mask_zone) - edge_start) / (1 - edge_start)).^2;
 amask(ra_norm >= 1) = 0; % fully absorb at edge
+%amask = 1; % turn off amask
 
 % Simulation settings
 save_interval = 1; % save frequency
@@ -169,9 +220,9 @@ num_round_trips = 100;
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask);
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, grids);
     E = E.*cmask2.*rmask2.*tmask;
-    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask);
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, grids);
     E = E.*cmask1.*rmask1.*tmask;
     
     % Visualization
