@@ -17,7 +17,7 @@ N = 2048; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 8*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
-Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
+Omega = 1; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
 % Grid
 k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
@@ -27,7 +27,7 @@ dx = x(2) - x(1);
 dy = dx;
 dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
 dz = L; % make each step a trip across the cavity, [m]
-%dz = .1;
+dz = 0.1;
 [X,Y] = meshgrid(x,y); % space domain
 
 % Set up mirror physical parameters for plotting
@@ -175,6 +175,8 @@ for n = 1:num_steps
     set(gca,'Color','w'); % white axes background
     axis('square')
     axis tight;
+    ylim([-2*D1, 2*D1])
+    xlim([-2*D1, 2*D1])
     view(2) % 2D view
     getframe();
 
