@@ -9,7 +9,8 @@ consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 % Adjustable parameters
 L = 400; % length of cavity, [m]
 %D1 = 0.0254/2; % diameter of mirror 1, [m]
-D1 = 0.0254;
+%D1 = 0.0254;
+D1 = 0.1; % large size to reduce clipping
 D2 = D1; % diameter of mirror 2, [m]
 Rc1 = 800; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
@@ -47,6 +48,10 @@ I0 = 0.5*consts.eps0*consts.c*abs(E0).^2; % initial intensity, [W/m^2]
 g1 = 1 - L/Rc1; % stability parameter 1
 g2 = 1 - L/Rc2; % stability paramter 2
 g = g1*g2; % stability product, 0 < g < 1 for a stable cavity
+
+% After one round-trip, what to expect:
+zr = pi*w0^2/lambda; % Rayleigh range
+wz = w0*sqrt(1+(L/zr).^2); % spot size, analytic solution
 
 % Set up frequency space
 kx = (2*pi/(N*dx)) * (-N/2 : N/2-1); % range from -pi/dx to +pi/dx
@@ -107,7 +112,7 @@ title(sprintf('Smoothed mask (taper %.3fm, sigma_px=%d)', taper_width_m, sigma_p
 drawnow;
 
 % Simulation settings
-save_interval = 1; % save frequency
+save_interval = 10; % save frequency, in number of steps
 step = 0; % initialize step 
 Z_traveled = []; % initialize prop distance array
 Z_position = []; % initialize intra-cavity position array
@@ -122,7 +127,7 @@ if ~exist(saveFolder, 'dir')
     mkdir(saveFolder);
 end
 
-fileName = sprintf('Omega=%.3f_L=%.0fkm_Rc=%.0f.mp4', Omega, L, Rc1);
+fileName = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.0fm_100trips.mp4', Omega, L, Rc1, D1);
 filePath = fullfile(saveFolder, fileName);
 v = VideoWriter(filePath, 'MPEG-4');
 v.FrameRate = 10; % adjust playback speed
@@ -134,7 +139,8 @@ open(v);
 P0 = sum(sum(abs(E).^2)); % initial power
 
 % Clip and shape the beam
-E = E.*cmask1.*rmask1.*tmask; % beam leaves from the RHS (mirror1)
+%E = E.*cmask1.*rmask1.*tmask; % beam leaves from the RHS (mirror1)
+E = E.*cmask1.*tmask;
 
 for n = 1:num_steps
     step = step + 1;
@@ -156,8 +162,8 @@ for n = 1:num_steps
     
     % Save E field snapshots and write video frame
     if mod(step, save_interval) == 0
-        step_label = sprintf('step_%d', step);
-        Es.(step_label) = E; % save intermediate field
+        % step_label = sprintf('step_%d', step);
+        % Es.(step_label) = E; % save intermediate field
 
     % Visualization
     I = 0.5*consts.eps0*consts.c*abs(E).^2;
