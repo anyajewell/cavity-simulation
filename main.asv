@@ -38,7 +38,7 @@ theta = linspace(0,2*pi,400);
 x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.001; % input beam waist, [m]
+w0 = 0.01; % input beam waist, [m]
 zr = pi*w0^2/lambda;
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;

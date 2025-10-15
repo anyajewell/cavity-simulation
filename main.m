@@ -7,7 +7,7 @@ consts.c = 3*10^8; % speed of light, [m/s]
 consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-L = 400; % length of cavity, [m]
+L = 1000; % length of cavity, [m]
 %D1 = 0.0254/2; % diameter of mirror 1, [m]
 %D1 = 0.0254;
 D1 = 0.1; % large size to reduce clipping
@@ -18,7 +18,7 @@ N = 2048; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 8*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
-Omega = 1; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
+Omega = .001; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
 % Grid
 k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
@@ -28,7 +28,7 @@ dx = x(2) - x(1);
 dy = dx;
 dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
 dz = L; % make each step a trip across the cavity, [m]
-dz = 0.1;
+dz = 10;
 [X,Y] = meshgrid(x,y); % space domain
 
 % Set up mirror physical parameters for plotting
@@ -38,7 +38,7 @@ theta = linspace(0,2*pi,400);
 x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.001; % input beam waist, [m]
+w0 = 0.01; % input beam waist, [m]
 zr = pi*w0^2/lambda;
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
@@ -119,18 +119,9 @@ Z_position = []; % initialize intra-cavity position array
 num_steps = round(L/dz); % number of steps needed for one trip across the cavity
 Es = struct(); % initialize a struct for saving intermediate E fields
 
-% Prepare video writer
-todayStr = datestr(now, 'yyyy-mm-dd');
-saveFolder = fullfile('C:\Users\Anya Jewell\Documents\MATLAB\ORACLE\Results', todayStr);
-
-if ~exist(saveFolder, 'dir')
-    mkdir(saveFolder);
-end
-
-fileName = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.0fm_100trips.mp4', Omega, L, Rc1, D1);
-filePath = fullfile(saveFolder, fileName);
-v = VideoWriter(filePath, 'MPEG-4');
-v.FrameRate = 10; % adjust playback speed
+% Select video name
+videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.0fm_100trips.mp4', Omega, L, Rc1, D1);
+v = Set_Up_Video(videoname); % set up the video
 open(v);
 
 %% SIMULATION, R --> L, one trip across in small steps
@@ -210,9 +201,9 @@ E = E.*cmask1; % clip the beam before it leaves
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, consts);
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);
     E = E.*cmask2.*rmask2.*tmask;
-    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, consts);
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);
     E = E.*cmask1.*rmask1.*tmask;
     
     % Visualization
