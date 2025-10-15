@@ -36,8 +36,9 @@ theta = linspace(0,2*pi,400);
 x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.1; % input beam waist, [m]
-zr = pi*w0^2/lambda;
+w0 = 0.01; % input beam waist, [m]
+zr = pi*w0^2/lambda; % Rayleigh range
+wz = w0*sqrt(1+(L/zr).^2); % spot size, analytic solution
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
 I0 = 0.5*consts.eps0*consts.c*abs(E0).^2; % initial intensity, [W/m^2]
@@ -46,10 +47,6 @@ I0 = 0.5*consts.eps0*consts.c*abs(E0).^2; % initial intensity, [W/m^2]
 g1 = 1 - L/Rc1; % stability parameter 1
 g2 = 1 - L/Rc2; % stability paramter 2
 g = g1*g2; % stability product, 0 < g < 1 for a stable cavity
-
-% After one round-trip, what to expect:
-zr = pi*w0^2/lambda; % Rayleigh range
-wz = w0*sqrt(1+(L/zr).^2); % spot size, analytic solution
 
 % Set up frequency space
 kx = (2*pi/(N*dx)) * (-N/2 : N/2-1); % range from -pi/dx to +pi/dx

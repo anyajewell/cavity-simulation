@@ -30,13 +30,13 @@ fprintf('w_mirror (radius) = %.4g m = %.3f mm\n', w_mirror, w_mirror*1e3);
 
 %% After one pass analysis
 
-w0s = 0.001:0.001:0.1; % initial waist for diverging beam
-zR = pi*w0^2/lambda; % Rayleigh range
-w_mirror = w0s*sqrt(1+((L/2)/zR)^2); % spot size at mirror for TEM00
+w0s = 0.001:0.001:.1; % initial waist for diverging beam
+zR = pi.*w0s.^2./lambda; % Rayleigh range
+w_mirror = w0s.*sqrt(1+(L./zR).^2); % spot size after one pass
 
 % Plotting
 figure;
-plot(w0s, w_mirror);
+plot(w0s, w_mirror, 'LineWidth', 1);
 title('Initial beam waist versus beam spot size at the mirror')
 ylabel('wz')
 xlabel('w0')
