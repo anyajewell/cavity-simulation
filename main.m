@@ -8,9 +8,7 @@ consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
 L = 100000; % length of cavity, [m]
-%D1 = 0.0254/2; % diameter of mirror 1, [m]
-%D1 = 0.0254;
-D1 = 0.5; % large size to reduce clipping
+D1 = 0.2; % large size to reduce clipping, [m]
 D2 = D1; % diameter of mirror 2, [m]
 Rc1 = L*2; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
@@ -38,7 +36,7 @@ theta = linspace(0,2*pi,400);
 x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.01; % input beam waist, [m]
+w0 = 0.1; % input beam waist, [m]
 zr = pi*w0^2/lambda;
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
@@ -197,7 +195,7 @@ close(v); % save video
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
 num_round_trips = 100;
-E = E.*cmask1; % clip the beam before it leaves
+E = E.*cmask1.*rmask1; % clip and shape the beam before it leaves
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips

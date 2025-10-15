@@ -7,18 +7,16 @@ consts.c = 3*10^8; % speed of light, [m/s]
 consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-L = 400; % length of cavity, [m]
-%D1 = 0.0254/2; % diameter of mirror 1, [m]
-%D1 = 0.0254;
-D1 = 0.1; % large size to reduce clipping
+L = 100000; % length of cavity, [m]
+D1 = 0.5; % large size to reduce clipping, [m]
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = 800; % radius of curvature for mirror 1, [m]
+Rc1 = L*2; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
-N = 2048; % number of mesh points along each dim of mesh grid
+N = 2048*2; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
-W = 8*D1; % domain half width, [m]
+W = 20*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
-Omega = 1; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
+Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
 % Grid
 k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
@@ -28,7 +26,7 @@ dx = x(2) - x(1);
 dy = dx;
 dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
 dz = L; % make each step a trip across the cavity, [m]
-dz = 0.1;
+%dz = 10;
 [X,Y] = meshgrid(x,y); % space domain
 
 % Set up mirror physical parameters for plotting
@@ -87,7 +85,7 @@ zone = (ra > inner_radius) & (ra < outer_radius);
 s = (ra(zone) - inner_radius) ./ (outer_radius - inner_radius); % 0..1
 amask_base(zone) = (1 - s).^poly_power;
 amask_base(ra >= outer_radius) = 0;
-amask = 1;
+%amask = 1;
 
 % Gaussian smoothing by 1D separable kernel (cheap & robust)
 % choose sigma in grid points (not meters). More sigma => smoother.
@@ -119,18 +117,9 @@ Z_position = []; % initialize intra-cavity position array
 num_steps = round(L/dz); % number of steps needed for one trip across the cavity
 Es = struct(); % initialize a struct for saving intermediate E fields
 
-% Prepare video writer
-todayStr = datestr(now, 'yyyy-mm-dd');
-saveFolder = fullfile('C:\Users\Anya Jewell\Documents\MATLAB\ORACLE\Results', todayStr);
-
-if ~exist(saveFolder, 'dir')
-    mkdir(saveFolder);
-end
-
-fileName = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.0fm_100trips.mp4', Omega, L, Rc1, D1);
-filePath = fullfile(saveFolder, fileName);
-v = VideoWriter(filePath, 'MPEG-4');
-v.FrameRate = 10; % adjust playback speed
+% Select video name
+videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.0fm_100trips.mp4', Omega, L, Rc1, D1);
+v = Set_Up_Video(videoname); % set up the video
 open(v);
 
 %% SIMULATION, R --> L, one trip across in small steps
@@ -181,8 +170,8 @@ for n = 1:num_steps
     set(gca,'Color','w'); % white axes background
     axis('square')
     axis tight;
-    ylim([-2*D1, 2*D1])
-    xlim([-2*D1, 2*D1])
+    ylim([-1.1*D1, 1.1*D1])
+    xlim([-1.1*D1, 1.1*D1])
     view(2) % 2D view
     getframe();
 
@@ -210,9 +199,9 @@ E = E.*cmask1; % clip the beam before it leaves
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, consts);
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);
     E = E.*cmask2.*rmask2.*tmask;
-    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, consts);
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);
     E = E.*cmask1.*rmask1.*tmask;
     
     % Visualization
@@ -231,8 +220,8 @@ for i = 1:num_round_trips
     set(gca,'Color','w'); % white axes background
     axis('square')
     axis tight;
-    ylim([-2*D1, 2*D1])
-    xlim([-2*D1, 2*D1])
+    ylim([-1.1*D1, 1.1*D1])
+    xlim([-1.1*D1, 1.1*D1])
     view(2) % 2D view
     getframe();
 
