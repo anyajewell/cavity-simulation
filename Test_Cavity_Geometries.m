@@ -1,4 +1,4 @@
-% Analysis of lowest order mode, given certain input parameters
+%% Analysis of lowest order mode, given certain input parameters
 
 lambda = 1.064e-6; % m
 L = 100000; % 100 km cavity
@@ -37,6 +37,6 @@ w_mirror = w0s.*sqrt(1+(L./zR).^2); % spot size after one pass
 % Plotting
 figure;
 plot(w0s, w_mirror, 'LineWidth', 1);
-title('Initial beam waist versus beam spot size at the mirror')
+title({'Initial Beam Waist vs. Beam Spot Size at Mirror 2'}, {'After One Non-Focusing Pass'})
 ylabel('wz')
 xlabel('w0')

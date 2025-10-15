@@ -8,28 +8,26 @@ consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
 L = 100000; % length of cavity, [m]
-D1 = 0.2; % large size to reduce clipping, [m]
+D1 = 0.5; % large size to reduce clipping, [m]
 D2 = D1; % diameter of mirror 2, [m]
 Rc1 = L*2; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
 N = 2048*2; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 20*D1; % domain half width, [m]
-CFL = 0.0625; % CFL number
 Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
 % Grid
 k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
 x = linspace(-W,W,N);
 y = x;
-dx = x(2) - x(1);
+dx = x(2)-x(1);
 dy = dx;
-dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
 dz = L; % make each step a trip across the cavity, [m]
 %dz = 10;
 [X,Y] = meshgrid(x,y); % space domain
 
-% Set up mirror physical parameters for plotting
+% Set up mirror circles for plotting
 r1 = D1/2; % radius of mirror 1
 r2 = D2/2; % radius of mirror 2
 theta = linspace(0,2*pi,400);
@@ -66,45 +64,6 @@ cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
 %cmask1 = 1; cmask2 = cmask1; % turn off clipping
 tmask = exp(k0*Omega*X./(1i*consts.c)*dz); % tilting mask, derived by me
 %tmask = 1; % turn off t mask
-
-% Set up an absorbing mask
-% --- Absorbing mask B: radial profile smoothed with separable Gaussian convolution ---
-% Tunable params
-taper_width_m = 0.30 * W;   % make this large (0.25-0.40 * W)
-inner_radius = W - taper_width_m;
-outer_radius = W;           % full absorb at W
-poly_power = 2;             % polynomial fall (1 linear, 2 quadratic, etc.)
-
-% Make base mask (polynomial roll)
-ra = sqrt(X.^2 + Y.^2);
-amask_base = ones(size(ra));
-zone = (ra > inner_radius) & (ra < outer_radius);
-s = (ra(zone) - inner_radius) ./ (outer_radius - inner_radius); % 0..1
-amask_base(zone) = (1 - s).^poly_power;
-amask_base(ra >= outer_radius) = 0;
-%amask = 1;
-
-% Gaussian smoothing by 1D separable kernel (cheap & robust)
-% choose sigma in grid points (not meters). More sigma => smoother.
-sigma_m = 0.08 * W;                      % smoothing width in meters (try 0.05-0.12*W)
-sigma_px = max(1, round(sigma_m / dx));  % convert to pixels
-% Create 1D Gaussian kernel
-k_half = ceil(4 * sigma_px);
-xk = -k_half:k_half;
-g1d = exp( - (xk.^2) / (2 * sigma_px^2) );
-g1d = g1d / sum(g1d); % normalize
-
-% separable convolution: first along x, then y
-amask_sm = conv2(g1d, g1d, amask_base, 'same');
-
-% enforce bounds and numerical floor
-amask_sm(amask_sm<1e-12) = 0;
-amask = amask_sm;
-
-% visualize
-figure(101); imagesc(x, y, amask); axis equal tight; colorbar;
-title(sprintf('Smoothed mask (taper %.3fm, sigma_px=%d)', taper_width_m, sigma_px));
-drawnow;
 
 % Simulation settings
 save_interval = 10; % save frequency, in number of steps
@@ -196,12 +155,34 @@ E = E.*cmask1.*rmask1; % clip and shape the beam before it leaves
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);    
     E = E.*cmask2.*rmask2.*tmask;
+    
+    % Visualization of beam at mirror 2
+    I = 0.5*consts.eps0*consts.c*abs(E).^2;
+    surf(X, Y, I/max(I(:)), 'LineStyle','none');
+    ylabel('[m]')
+    xlabel('[m]')
+    title({
+        sprintf('Laser Mode at Z = %.1f m', Z_traveled(step)), ...
+        sprintf('Intra-Cavity Position = %.1f', Z_position(step))
+    })
+    hold on;
+    plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2); % plot mirror outline
+    hold off;
+    set(gcf,'Color','w'); % white figure background
+    set(gca,'Color','w'); % white axes background
+    axis('square')
+    axis tight;
+    ylim([-1.1*D1, 1.1*D1])
+    xlim([-1.1*D1, 1.1*D1])
+    view(2) % 2D view
+    getframe();
+
     [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);
     E = E.*cmask1.*rmask1.*tmask;
     
-    % Visualization
+    % Visualization of beam at mirror 1
     I = 0.5*consts.eps0*consts.c*abs(E).^2;
     surf(X, Y, I/max(I(:)), 'LineStyle','none');
     ylabel('[m]')
@@ -290,6 +271,3 @@ title('Beam cross section');
 grid on;
 legend()
 axis tight;
-
-
-%% Graveyard
