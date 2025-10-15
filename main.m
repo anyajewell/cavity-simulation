@@ -7,16 +7,16 @@ consts.c = 3*10^8; % speed of light, [m/s]
 consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-L = 10000; % length of cavity, [m]
+L = 100000; % length of cavity, [m]
 %D1 = 0.0254/2; % diameter of mirror 1, [m]
 %D1 = 0.0254;
-D1 = 0.15; % large size to reduce clipping
+D1 = 0.5; % large size to reduce clipping
 D2 = D1; % diameter of mirror 2, [m]
 Rc1 = L*2; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
 N = 2048*2; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
-W = 15*D1; % domain half width, [m]
+W = 20*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
 Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
