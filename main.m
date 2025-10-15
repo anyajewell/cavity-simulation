@@ -7,16 +7,18 @@ consts.c = 3*10^8; % speed of light, [m/s]
 consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-L = 500; % length of cavity, [m]
-D1 = 0.0254/2; % diameter of mirror 1, [m]
+L = 1000; % length of cavity, [m]
+%D1 = 0.0254/2; % diameter of mirror 1, [m]
+%D1 = 0.0254;
+D1 = 0.1; % large size to reduce clipping
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = 2000; % radius of curvature for mirror 1, [m]
+Rc1 = 800; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
-N = 256; % number of mesh points along each dim of mesh grid
+N = 2048; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
-W = 4*D1; % domain half width, [m]
+W = 8*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
-Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
+Omega = .001; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
 % Grid
 k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
@@ -25,9 +27,8 @@ y = x;
 dx = x(2) - x(1);
 dy = dx;
 dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
-dz = 2*k0*dx^2/pi;
-%dz = L; % make each step a trip across the cavity, [m]
-%dz = 1;
+dz = L; % make each step a trip across the cavity, [m]
+dz = 10;
 [X,Y] = meshgrid(x,y); % space domain
 
 % Set up mirror physical parameters for plotting
@@ -37,7 +38,7 @@ theta = linspace(0,2*pi,400);
 x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.001; % input beam waist, [m]
+w0 = 0.01; % input beam waist, [m]
 zr = pi*w0^2/lambda;
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
@@ -48,63 +49,18 @@ g1 = 1 - L/Rc1; % stability parameter 1
 g2 = 1 - L/Rc2; % stability paramter 2
 g = g1*g2; % stability product, 0 < g < 1 for a stable cavity
 
-% % Set up frequency space
-% kx = (2*pi/(N*dx)) * (-N/2 : N/2-1); % range from -pi/dx to +pi/dx
-% ky = kx;  % symmetric, since dx = dy
-% [KX, KY] = meshgrid(kx, ky);
-% 
-% % Propagation operators, to be used in frequency space
-% H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2)); % free space transfer function of propagation
-% R = @(z1, z2) exp(-i*KX*Omega/consts.c*1/2*(z2+z1)*dz); % rotation operator
+% After one round-trip, what to expect:
+zr = pi*w0^2/lambda; % Rayleigh range
+wz = w0*sqrt(1+(L/zr).^2); % spot size, analytic solution
 
-% Padding grid setup
-padFactor = 2;
-Nxp = padFactor * N;
-Nyp = Nxp; % same in both directions
-Lxp = padFactor * 2 * W;
-Lyp = Lxp;
-dxp = Lxp / Nxp;
-dyp = Lyp / Nyp;
-
-% Coordinate arrays (real space)
-xp = (-Nxp/2 : Nxp/2-1) * dxp;
-yp = xp;
-
-% Frequency grid
-dkx = 2*pi / Lxp;
-dky = 2*pi / Lyp;
-kx = (-Nxp/2 : Nxp/2-1) * dkx;
-ky = kx;
-kx = fftshift(kx);
-ky = fftshift(ky);
+% Set up frequency space
+kx = (2*pi/(N*dx)) * (-N/2 : N/2-1); % range from -pi/dx to +pi/dx
+ky = kx;  % symmetric, since dx = dy
 [KX, KY] = meshgrid(kx, ky);
 
-H = exp(1i/(2*k0) * dz * (KX.^2 + KY.^2)); % propagation operator in frequency space
+% Propagation operators, to be used in frequency space
+H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2)); % free space transfer function of propagation
 R = @(z1, z2) exp(-i*KX*Omega/consts.c*1/2*(z2+z1)*dz); % rotation operator
-
-% compute radial coordinate for padded grid
-[xp_grid, yp_grid] = meshgrid(xp, yp);   % xp, yp already computed
-ra = sqrt(xp_grid.^2 + yp_grid.^2);
-ra_norm = ra / max(abs(xp));   % normalized to padded half-width
-
-edge_start = 0.7;  % start absorbing at 70% of padded half-width (tune)
-edge_end   = 0.95; % finish absorbing at 95%
-amask_pad = ones(size(ra));
-mask_zone = (ra_norm > edge_start) & (ra_norm < edge_end);
-amask_pad(mask_zone) = 0.5 * (1 + cos(pi * (ra_norm(mask_zone)-edge_start)/(edge_end-edge_start)));
-amask_pad(ra_norm >= edge_end) = 0;
-
-% Pack everything in a struct for easy passing
-grids = struct( ...
-    'x', x, 'y', y, ...
-    'xp', xp, 'yp', yp, ...
-    'kx', kx, 'ky', ky, ...
-    'KX', KX, 'KY', KY, ...
-    'H', H, ...
-    'Nx', N, 'Ny', N, ...
-    'Nxp', Nxp, 'Nyp', Nyp, ...
-    'padFactor', padFactor);
-grids.amask_pad = amask_pad;
 
 % Propagation masks: mirror phase screens, clipping masks, and tilting
 % mask, to be used in real space
@@ -117,33 +73,55 @@ tmask = exp(k0*Omega*X./(1i*consts.c)*dz); % tilting mask, derived by me
 %tmask = 1; % turn off t mask
 
 % Set up an absorbing mask
-ra = sqrt(X.^2 + Y.^2); ra_norm = ra / W; amask = ones(size(X));
-edge_start = 0.8; % start absorbing after 80% of domain
-mask_zone = ra_norm > edge_start;
-amask(mask_zone) = cos((pi/2) * (ra_norm(mask_zone) - edge_start) / (1 - edge_start)).^2;
-amask(ra_norm >= 1) = 0; % fully absorb at edge
-%amask = 1; % turn off amask
+% --- Absorbing mask B: radial profile smoothed with separable Gaussian convolution ---
+% Tunable params
+taper_width_m = 0.30 * W;   % make this large (0.25-0.40 * W)
+inner_radius = W - taper_width_m;
+outer_radius = W;           % full absorb at W
+poly_power = 2;             % polynomial fall (1 linear, 2 quadratic, etc.)
+
+% Make base mask (polynomial roll)
+ra = sqrt(X.^2 + Y.^2);
+amask_base = ones(size(ra));
+zone = (ra > inner_radius) & (ra < outer_radius);
+s = (ra(zone) - inner_radius) ./ (outer_radius - inner_radius); % 0..1
+amask_base(zone) = (1 - s).^poly_power;
+amask_base(ra >= outer_radius) = 0;
+amask = 1;
+
+% Gaussian smoothing by 1D separable kernel (cheap & robust)
+% choose sigma in grid points (not meters). More sigma => smoother.
+sigma_m = 0.08 * W;                      % smoothing width in meters (try 0.05-0.12*W)
+sigma_px = max(1, round(sigma_m / dx));  % convert to pixels
+% Create 1D Gaussian kernel
+k_half = ceil(4 * sigma_px);
+xk = -k_half:k_half;
+g1d = exp( - (xk.^2) / (2 * sigma_px^2) );
+g1d = g1d / sum(g1d); % normalize
+
+% separable convolution: first along x, then y
+amask_sm = conv2(g1d, g1d, amask_base, 'same');
+
+% enforce bounds and numerical floor
+amask_sm(amask_sm<1e-12) = 0;
+amask = amask_sm;
+
+% visualize
+figure(101); imagesc(x, y, amask); axis equal tight; colorbar;
+title(sprintf('Smoothed mask (taper %.3fm, sigma_px=%d)', taper_width_m, sigma_px));
+drawnow;
 
 % Simulation settings
-save_interval = 1; % save frequency
+save_interval = 10; % save frequency, in number of steps
 step = 0; % initialize step 
 Z_traveled = []; % initialize prop distance array
 Z_position = []; % initialize intra-cavity position array
 num_steps = round(L/dz); % number of steps needed for one trip across the cavity
 Es = struct(); % initialize a struct for saving intermediate E fields
 
-% Prepare video writer
-todayStr = datestr(now, 'yyyy-mm-dd');
-saveFolder = fullfile('C:\Users\Anya Jewell\Documents\MATLAB\ORACLE\Results', todayStr);
-
-if ~exist(saveFolder, 'dir')
-    mkdir(saveFolder);
-end
-
-fileName = sprintf('Omega=%.3f_L=%.0fkm.mp4', Omega, L);
-filePath = fullfile(saveFolder, fileName);
-v = VideoWriter(filePath, 'MPEG-4');
-v.FrameRate = 10; % adjust playback speed
+% Select video name
+videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.0fm_100trips.mp4', Omega, L, Rc1, D1);
+v = Set_Up_Video(videoname); % set up the video
 open(v);
 
 %% SIMULATION, R --> L, one trip across in small steps
@@ -152,7 +130,8 @@ open(v);
 P0 = sum(sum(abs(E).^2)); % initial power
 
 % Clip and shape the beam
-E = E.*cmask1.*rmask1.*tmask; % beam leaves from the RHS (mirror1)
+%E = E.*cmask1.*rmask1.*tmask; % beam leaves from the RHS (mirror1)
+E = E.*cmask1.*tmask;
 
 for n = 1:num_steps
     step = step + 1;
@@ -170,12 +149,12 @@ for n = 1:num_steps
     FE = fft2(E); % transform beam to frequency domain
     FE = FE.*fftshift(H).*R(Z_position(step), Z_position(step)-dz); % propagate beam in frequency domain 
     E = ifft2(FE); % transform back to space domain 
-    E = tmask.*E; % apply the tilting mask
+    E = tmask.*E.*amask; % apply the tilting mask
     
     % Save E field snapshots and write video frame
     if mod(step, save_interval) == 0
-        step_label = sprintf('step_%d', step);
-        Es.(step_label) = E; % save intermediate field
+        % step_label = sprintf('step_%d', step);
+        % Es.(step_label) = E; % save intermediate field
 
     % Visualization
     I = 0.5*consts.eps0*consts.c*abs(E).^2;
@@ -193,6 +172,8 @@ for n = 1:num_steps
     set(gca,'Color','w'); % white axes background
     axis('square')
     axis tight;
+    ylim([-2*D1, 2*D1])
+    xlim([-2*D1, 2*D1])
     view(2) % 2D view
     getframe();
 
@@ -216,13 +197,13 @@ close(v); % save video
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
 num_round_trips = 100;
-%E = E.*cmask1; % clip the beam before it leaves
+E = E.*cmask1; % clip the beam before it leaves
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, grids);
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);
     E = E.*cmask2.*rmask2.*tmask;
-    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, grids);
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);
     E = E.*cmask1.*rmask1.*tmask;
     
     % Visualization
@@ -241,6 +222,8 @@ for i = 1:num_round_trips
     set(gca,'Color','w'); % white axes background
     axis('square')
     axis tight;
+    ylim([-2*D1, 2*D1])
+    xlim([-2*D1, 2*D1])
     view(2) % 2D view
     getframe();
 
