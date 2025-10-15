@@ -7,18 +7,18 @@ consts.c = 3*10^8; % speed of light, [m/s]
 consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-L = 1000; % length of cavity, [m]
+L = 10000; % length of cavity, [m]
 %D1 = 0.0254/2; % diameter of mirror 1, [m]
 %D1 = 0.0254;
-D1 = 0.1; % large size to reduce clipping
+D1 = 0.15; % large size to reduce clipping
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = 800; % radius of curvature for mirror 1, [m]
+Rc1 = L*2; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
-N = 2048; % number of mesh points along each dim of mesh grid
+N = 2048*2; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
-W = 8*D1; % domain half width, [m]
+W = 15*D1; % domain half width, [m]
 CFL = 0.0625; % CFL number
-Omega = .001; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
+Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
 % Grid
 k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
@@ -28,7 +28,7 @@ dx = x(2) - x(1);
 dy = dx;
 dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
 dz = L; % make each step a trip across the cavity, [m]
-dz = 10;
+%dz = 10;
 [X,Y] = meshgrid(x,y); % space domain
 
 % Set up mirror physical parameters for plotting
@@ -87,7 +87,7 @@ zone = (ra > inner_radius) & (ra < outer_radius);
 s = (ra(zone) - inner_radius) ./ (outer_radius - inner_radius); % 0..1
 amask_base(zone) = (1 - s).^poly_power;
 amask_base(ra >= outer_radius) = 0;
-amask = 1;
+%amask = 1;
 
 % Gaussian smoothing by 1D separable kernel (cheap & robust)
 % choose sigma in grid points (not meters). More sigma => smoother.
@@ -172,8 +172,8 @@ for n = 1:num_steps
     set(gca,'Color','w'); % white axes background
     axis('square')
     axis tight;
-    ylim([-2*D1, 2*D1])
-    xlim([-2*D1, 2*D1])
+    ylim([-1.1*D1, 1.1*D1])
+    xlim([-1.1*D1, 1.1*D1])
     view(2) % 2D view
     getframe();
 
@@ -222,8 +222,8 @@ for i = 1:num_round_trips
     set(gca,'Color','w'); % white axes background
     axis('square')
     axis tight;
-    ylim([-2*D1, 2*D1])
-    xlim([-2*D1, 2*D1])
+    ylim([-1.1*D1, 1.1*D1])
+    xlim([-1.1*D1, 1.1*D1])
     view(2) % 2D view
     getframe();
 
