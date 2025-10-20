@@ -15,7 +15,7 @@ Rc2 = Rc1; % radius of curvature for mirror 2, [m]
 N = 2048*2; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 20*D1; % domain half width, [m]
-Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
+Omega = 0.001; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
 % Grid
 k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
@@ -25,6 +25,9 @@ dx = x(2)-x(1);
 dy = dx;
 dz = L; % make each step a trip across the cavity, [m]
 %dz = 10;
+dt = dz/consts.c; % dz maps directly to dz
+Rdx = Omega*dz*dt; % change in dx from rotational shearing, [m]
+Rdx_pixels = Rdx/dx; % amount of x cell that the E field jumps over
 [X,Y] = meshgrid(x,y); % space domain
 
 % Set up mirror circles for plotting
@@ -62,8 +65,9 @@ rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
 cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
 cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
 %cmask1 = 1; cmask2 = cmask1; % turn off clipping
-tmask = exp(k0*Omega*X./(1i*consts.c)*dz); % tilting mask, derived by me
-%tmask = 1; % turn off t mask
+T = exp(k0*Omega*X./(1i*consts.c)*dz); % tilting operator, derived by me
+%T = 1; % turn off t mask
+%R = griddedInterpolant(Y.', X.', E.', 'linear', 'none'); % rotational shearing operator
 
 % Simulation settings
 save_interval = 10; % save frequency, in number of steps
@@ -74,7 +78,7 @@ num_steps = round(L/dz); % number of steps needed for one trip across the cavity
 Es = struct(); % initialize a struct for saving intermediate E fields
 
 % Select video name
-videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.0fm_100trips.mp4', Omega, L, Rc1, D1);
+videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.0fm_10trips.mp4', Omega, L, Rc1, D1);
 v = Set_Up_Video(videoname); % set up the video
 open(v);
 
@@ -84,8 +88,8 @@ open(v);
 P0 = sum(sum(abs(E).^2)); % initial power
 
 % Clip and shape the beam
-%E = E.*cmask1.*rmask1.*tmask; % beam leaves from the RHS (mirror1)
-E = E.*cmask1.*tmask;
+%E = E.*cmask1.*rmask1.*T; % beam leaves from the RHS (mirror1)
+E = E.*cmask1.*T;
 
 for n = 1:num_steps
     step = step + 1;
@@ -101,9 +105,12 @@ for n = 1:num_steps
 
     % Propagation
     FE = fft2(E); % transform beam to frequency domain
-    FE = FE.*fftshift(H).*R(Z_position(step), Z_position(step)-dz); % propagate beam in frequency domain 
+    %FE = FE.*fftshift(H).*R(Z_position(step), Z_position(step)-dz); % propagate beam in frequency domain
+    FE = FE.*fftshift(H); % propagate beam in frequency domain
     E = ifft2(FE); % transform back to space domain 
-    E = tmask.*E.*amask; % apply the tilting mask
+    E = T.*E; % apply the tilting mask
+    %E = R(Y.', X.' - dx_pixels).'; % shift the beam, rotational shearing
+    E = interp2(E, (1:N) - Rdx_pixels, (1:N)', 'linear', 0); % shift the beam, rotational shearing
     
     % Save E field snapshots and write video frame
     if mod(step, save_interval) == 0
@@ -142,7 +149,7 @@ for n = 1:num_steps
     % BeamWidth(n) = sum(sum(sqrt(X.^2+Y.^2).*abs(E).^2))/P0;
 end
 
-E = E.*cmask2.*rmask2.*tmask; % beam arrives at the LHS (mirror2)
+E = E.*cmask2.*rmask2.*T; % beam arrives at the LHS (mirror2)
 close(v); % save video
 
 %% SIMULATION
@@ -150,13 +157,13 @@ close(v); % save video
 % Set how many round trips across the cavity you want to take.
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
-num_round_trips = 100;
+num_round_trips = 10;
 E = E.*cmask1.*rmask1; % clip and shape the beam before it leaves
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);    
-    E = E.*cmask2.*rmask2.*tmask;
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, T, consts, N, Rdx_pixels);    
+    E = E.*cmask2.*rmask2.*T;
     
     % Visualization of beam at mirror 2
     I = 0.5*consts.eps0*consts.c*abs(E).^2;
@@ -179,8 +186,9 @@ for i = 1:num_round_trips
     view(2) % 2D view
     getframe();
 
-    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);
-    E = E.*cmask1.*rmask1.*tmask;
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, T, consts, ...
+        N, Rdx_pixels);
+    E = E.*cmask1.*rmask1.*T;
     
     % Visualization of beam at mirror 1
     I = 0.5*consts.eps0*consts.c*abs(E).^2;

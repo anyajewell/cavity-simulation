@@ -15,21 +15,22 @@ Rc2 = Rc1; % radius of curvature for mirror 2, [m]
 N = 2048*2; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
 W = 20*D1; % domain half width, [m]
-CFL = 0.0625; % CFL number
-Omega = 0; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
+Omega = 0.001; % relative rotation of spacecraft frame to inertial geocentric frame, [rad/s]
 
 % Grid
 k0 = 2*pi/lambda; % freespace wavenumber, [m^-1]
 x = linspace(-W,W,N);
 y = x;
-dx = x(2) - x(1);
+dx = x(2)-x(1);
 dy = dx;
-dz = CFL*4*k0*dx^2; % CFL-like condition, [m]
 dz = L; % make each step a trip across the cavity, [m]
 %dz = 10;
+dt = dz/consts.c; % dz maps directly to dz
+Rdx = Omega*dz*dt; % change in dx from rotational shearing, [m]
+Rdx_pixels = Rdx/dx; % amount of x cell that the E field jumps over
 [X,Y] = meshgrid(x,y); % space domain
 
-% Set up mirror physical parameters for plotting
+% Set up mirror circles for plotting
 r1 = D1/2; % radius of mirror 1
 r2 = D2/2; % radius of mirror 2
 theta = linspace(0,2*pi,400);
@@ -37,7 +38,8 @@ x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_cir
 
 % Input beam
 w0 = 0.01; % input beam waist, [m]
-zr = pi*w0^2/lambda;
+zr = pi*w0^2/lambda; % Rayleigh range
+wz = w0*sqrt(1+(L/zr).^2); % spot size, analytic solution
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
 E = E0;
 I0 = 0.5*consts.eps0*consts.c*abs(E0).^2; % initial intensity, [W/m^2]
@@ -46,10 +48,6 @@ I0 = 0.5*consts.eps0*consts.c*abs(E0).^2; % initial intensity, [W/m^2]
 g1 = 1 - L/Rc1; % stability parameter 1
 g2 = 1 - L/Rc2; % stability paramter 2
 g = g1*g2; % stability product, 0 < g < 1 for a stable cavity
-
-% After one round-trip, what to expect:
-zr = pi*w0^2/lambda; % Rayleigh range
-wz = w0*sqrt(1+(L/zr).^2); % spot size, analytic solution
 
 % Set up frequency space
 kx = (2*pi/(N*dx)) * (-N/2 : N/2-1); % range from -pi/dx to +pi/dx
@@ -67,47 +65,9 @@ rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
 cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
 cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
 %cmask1 = 1; cmask2 = cmask1; % turn off clipping
-tmask = exp(k0*Omega*X./(1i*consts.c)*dz); % tilting mask, derived by me
-%tmask = 1; % turn off t mask
-
-% Set up an absorbing mask
-% --- Absorbing mask B: radial profile smoothed with separable Gaussian convolution ---
-% Tunable params
-taper_width_m = 0.30 * W;   % make this large (0.25-0.40 * W)
-inner_radius = W - taper_width_m;
-outer_radius = W;           % full absorb at W
-poly_power = 2;             % polynomial fall (1 linear, 2 quadratic, etc.)
-
-% Make base mask (polynomial roll)
-ra = sqrt(X.^2 + Y.^2);
-amask_base = ones(size(ra));
-zone = (ra > inner_radius) & (ra < outer_radius);
-s = (ra(zone) - inner_radius) ./ (outer_radius - inner_radius); % 0..1
-amask_base(zone) = (1 - s).^poly_power;
-amask_base(ra >= outer_radius) = 0;
-%amask = 1;
-
-% Gaussian smoothing by 1D separable kernel (cheap & robust)
-% choose sigma in grid points (not meters). More sigma => smoother.
-sigma_m = 0.08 * W;                      % smoothing width in meters (try 0.05-0.12*W)
-sigma_px = max(1, round(sigma_m / dx));  % convert to pixels
-% Create 1D Gaussian kernel
-k_half = ceil(4 * sigma_px);
-xk = -k_half:k_half;
-g1d = exp( - (xk.^2) / (2 * sigma_px^2) );
-g1d = g1d / sum(g1d); % normalize
-
-% separable convolution: first along x, then y
-amask_sm = conv2(g1d, g1d, amask_base, 'same');
-
-% enforce bounds and numerical floor
-amask_sm(amask_sm<1e-12) = 0;
-amask = amask_sm;
-
-% visualize
-figure(101); imagesc(x, y, amask); axis equal tight; colorbar;
-title(sprintf('Smoothed mask (taper %.3fm, sigma_px=%d)', taper_width_m, sigma_px));
-drawnow;
+T = exp(k0*Omega*X./(1i*consts.c)*dz); % tilting operator, derived by me
+%T = 1; % turn off t mask
+%R = griddedInterpolant(Y.', X.', E.', 'linear', 'none'); % rotational shearing operator
 
 % Simulation settings
 save_interval = 10; % save frequency, in number of steps
@@ -118,7 +78,7 @@ num_steps = round(L/dz); % number of steps needed for one trip across the cavity
 Es = struct(); % initialize a struct for saving intermediate E fields
 
 % Select video name
-videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.0fm_100trips.mp4', Omega, L, Rc1, D1);
+videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.0fm_10trips.mp4', Omega, L, Rc1, D1);
 v = Set_Up_Video(videoname); % set up the video
 open(v);
 
@@ -128,8 +88,8 @@ open(v);
 P0 = sum(sum(abs(E).^2)); % initial power
 
 % Clip and shape the beam
-%E = E.*cmask1.*rmask1.*tmask; % beam leaves from the RHS (mirror1)
-E = E.*cmask1.*tmask;
+%E = E.*cmask1.*rmask1.*T; % beam leaves from the RHS (mirror1)
+E = E.*cmask1.*T;
 
 for n = 1:num_steps
     step = step + 1;
@@ -145,9 +105,12 @@ for n = 1:num_steps
 
     % Propagation
     FE = fft2(E); % transform beam to frequency domain
-    FE = FE.*fftshift(H).*R(Z_position(step), Z_position(step)-dz); % propagate beam in frequency domain 
+    %FE = FE.*fftshift(H).*R(Z_position(step), Z_position(step)-dz); % propagate beam in frequency domain
+    FE = FE.*fftshift(H); % propagate beam in frequency domain
     E = ifft2(FE); % transform back to space domain 
-    E = tmask.*E.*amask; % apply the tilting mask
+    E = T.*E; % apply the tilting mask
+    %E = R(Y.', X.' - dx_pixels).'; % shift the beam, rotational shearing
+    E = interp2(E, (1:N) - Rdx_pixels, (1:N)', 'linear', 0); % shift the beam, rotational shearing
     
     % Save E field snapshots and write video frame
     if mod(step, save_interval) == 0
@@ -186,7 +149,7 @@ for n = 1:num_steps
     % BeamWidth(n) = sum(sum(sqrt(X.^2+Y.^2).*abs(E).^2))/P0;
 end
 
-E = E.*cmask2.*rmask2.*tmask; % beam arrives at the LHS (mirror2)
+E = E.*cmask2.*rmask2.*T; % beam arrives at the LHS (mirror2)
 close(v); % save video
 
 %% SIMULATION
@@ -195,16 +158,38 @@ close(v); % save video
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
 num_round_trips = 100;
-E = E.*cmask1; % clip the beam before it leaves
+E = E.*cmask1.*rmask1; % clip and shape the beam before it leaves
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);
-    E = E.*cmask2.*rmask2.*tmask;
-    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);
-    E = E.*cmask1.*rmask1.*tmask;
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, T, consts);    
+    E = E.*cmask2.*rmask2.*T;
     
-    % Visualization
+    % Visualization of beam at mirror 2
+    I = 0.5*consts.eps0*consts.c*abs(E).^2;
+    surf(X, Y, I/max(I(:)), 'LineStyle','none');
+    ylabel('[m]')
+    xlabel('[m]')
+    title({
+        sprintf('Laser Mode at Z = %.1f m', Z_traveled(step)), ...
+        sprintf('Intra-Cavity Position = %.1f', Z_position(step))
+    })
+    hold on;
+    plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2); % plot mirror outline
+    hold off;
+    set(gcf,'Color','w'); % white figure background
+    set(gca,'Color','w'); % white axes background
+    axis('square')
+    axis tight;
+    ylim([-1.1*D1, 1.1*D1])
+    xlim([-1.1*D1, 1.1*D1])
+    view(2) % 2D view
+    getframe();
+
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, T, consts);
+    E = E.*cmask1.*rmask1.*T;
+    
+    % Visualization of beam at mirror 1
     I = 0.5*consts.eps0*consts.c*abs(E).^2;
     surf(X, Y, I/max(I(:)), 'LineStyle','none');
     ylabel('[m]')
@@ -293,6 +278,3 @@ title('Beam cross section');
 grid on;
 legend()
 axis tight;
-
-
-%% Graveyard
