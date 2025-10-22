@@ -25,9 +25,6 @@ dx = x(2)-x(1);
 dy = dx;
 dz = L; % make each step a trip across the cavity, [m]
 %dz = 10;
-dt = dz/consts.c; % dz maps directly to dz
-Rdx = Omega*dz*dt; % change in dx from rotational shearing, [m]
-Rdx_pixels = Rdx/dx; % amount of x cell that the E field jumps over
 [X,Y] = meshgrid(x,y); % space domain
 
 % Set up mirror circles for plotting
@@ -78,7 +75,7 @@ num_steps = round(L/dz); % number of steps needed for one trip across the cavity
 Es = struct(); % initialize a struct for saving intermediate E fields
 
 % Select video name
-videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.0fm_10trips.mp4', Omega, L, Rc1, D1);
+videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.2fm_100trips.mp4', Omega, L, Rc1, D1);
 v = Set_Up_Video(videoname); % set up the video
 open(v);
 
@@ -157,12 +154,12 @@ close(v); % save video
 % Set how many round trips across the cavity you want to take.
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
-num_round_trips = 10;
+num_round_trips = 100;
 E = E.*cmask1.*rmask1; % clip and shape the beam before it leaves
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, T, consts, N, Rdx_pixels);    
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, T, consts, N, Rdx_pixels, Omega, X, Y);    
     E = E.*cmask2.*rmask2.*T;
     
     % % Visualization of beam at mirror 2
@@ -187,7 +184,7 @@ for i = 1:num_round_trips
     % getframe();
 
     [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, T, consts, ...
-        N, Rdx_pixels);
+        N, Rdx_pixels, Omega, X, Y);
     E = E.*cmask1.*rmask1.*T;
     
     % Visualization of beam at mirror 1

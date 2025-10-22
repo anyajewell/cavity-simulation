@@ -23,11 +23,11 @@ x = linspace(-W,W,N);
 y = x;
 dx = x(2)-x(1);
 dy = dx;
-dz = L; % make each step a trip across the cavity, [m]
+dz = L/4; % make each step a trip across the cavity, [m]
 %dz = 10;
 dt = dz/consts.c; % dz maps directly to dz
-Rdx = Omega*dz*dt; % change in dx from rotational shearing, [m]
-Rdx_pixels = Rdx/dx; % amount of x cell that the E field jumps over
+Rdx = @(z) Omega*z*dt; % change in dx from rotational shearing, [m]
+Rdx_pixels = @(z) Rdx(z)/dx; % amount of x cell that the E field jumps over
 [X,Y] = meshgrid(x,y); % space domain
 
 % Set up mirror circles for plotting
@@ -78,7 +78,7 @@ num_steps = round(L/dz); % number of steps needed for one trip across the cavity
 Es = struct(); % initialize a struct for saving intermediate E fields
 
 % Select video name
-videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.2fm_100trips_analyticsol.mp4', Omega, L, Rc1, D1);
+videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.2fm_100trips_smallerdz.mp4', Omega, L, Rc1, D1);
 v = Set_Up_Video(videoname); % set up the video
 open(v);
 
