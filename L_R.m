@@ -20,7 +20,7 @@ function [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_positio
         FE = FE.*fftshift(H); % propagate beam in frequency domain
         E = ifft2(FE); % transform back to space domain
         E = E.*tmask; % absorb energy at boundaries and apply tilting mask
-        alpha = (Omega/consts.c)*Z_traveled(step)*dz + (Omega/(2*consts.c))*dz^2;  % scalar shift in x
+        alpha = (Omega/consts.c)*Z_position(step)*dz + (Omega/(2*consts.c))*dz^2;  % scalar shift in x
         E = interp2(X, Y, E, X + alpha, Y, 'linear', 0); % shift the beam, rotational shearing
         %E = interp2(E, (1:N) - Rdx_pixels(Z_position(step)), (1:N)', 'linear', 0); % shift the beam, rotational shearing
         

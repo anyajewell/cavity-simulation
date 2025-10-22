@@ -10,7 +10,7 @@ consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 L = 100000; % length of cavity, [m]
 D1 = 0.5; % large size to reduce clipping, [m]
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = L*2; % radius of curvature for mirror 1, [m]
+Rc1 = L; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
 N = 2048*2; % number of mesh points along each dim of mesh grid
 lambda = 1.064e-6; % laser wavelength, [m]
@@ -37,7 +37,7 @@ theta = linspace(0,2*pi,400);
 x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.01; % input beam waist, [m]
+w0 = 0.1; % input beam waist, [m]
 zr = pi*w0^2/lambda; % Rayleigh range
 wz = w0*sqrt(1+(L/zr).^2); % spot size, analytic solution
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
@@ -56,7 +56,7 @@ ky = kx;  % symmetric, since dx = dy
 
 % Propagation operators, to be used in frequency space
 H = exp(1i/(2*k0)*dz*(KX.^2+KY.^2)); % free space transfer function of propagation
-R = @(z1, z2) exp(-i*KX*Omega/consts.c*1/2*(z2+z1)*dz); % rotation operator
+R = @(z1, z2) exp(-1i*KX*Omega/consts.c*1/2*(z2+z1)*dz); % rotation operator
 
 % Propagation masks: mirror phase screens, clipping masks, and tilting
 % mask, to be used in real space
@@ -65,8 +65,8 @@ rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
 cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
 cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
 %cmask1 = 1; cmask2 = cmask1; % turn off clipping
-T = exp(k0*Omega*X./(1i*consts.c)*dz); % tilting operator, derived by me
-%T = 1; % turn off t mask
+%T = exp(k0*Omega*X./(1i*consts.c)*dz); % tilting operator, derived by me
+T = 1; % turn off t mask
 %R = griddedInterpolant(Y.', X.', E.', 'linear', 'none'); % rotational shearing operator
 
 % Simulation settings
@@ -78,7 +78,7 @@ num_steps = round(L/dz); % number of steps needed for one trip across the cavity
 Es = struct(); % initialize a struct for saving intermediate E fields
 
 % Select video name
-videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.2fm_100trips_smallerdz.mp4', Omega, L, Rc1, D1);
+videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.2fm_w0=10cmg.mp4', Omega, L, Rc1, D1);
 v = Set_Up_Video(videoname); % set up the video
 open(v);
 
