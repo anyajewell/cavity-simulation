@@ -1,4 +1,4 @@
-function v = Set_Up_Video(videoname)    
+function [saveFolder, v] = Set_Up_Video(videoname)    
 
     % Prepare video writer
     todayStr = datestr(now, 'yyyy-mm-dd');

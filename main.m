@@ -7,7 +7,7 @@ consts.c = 3*10^8; % speed of light, [m/s]
 consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
-L = 100000; % length of cavity, [m]
+L = 150000; % length of cavity, [m]
 D1 = 0.5; % large size to reduce clipping, [m]
 D2 = D1; % diameter of mirror 2, [m]
 Rc1 = L; % radius of curvature for mirror 1, [m]
@@ -23,7 +23,7 @@ x = linspace(-W,W,N);
 y = x;
 dx = x(2)-x(1);
 dy = dx;
-dz = L/4; % make each step a trip across the cavity, [m]
+dz = L; % make each step a trip across the cavity, [m]
 %dz = 10;
 dt = dz/consts.c; % dz maps directly to dz
 Rdx = @(z) Omega*z*dt; % change in dx from rotational shearing, [m]
@@ -66,7 +66,7 @@ cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
 cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
 %cmask1 = 1; cmask2 = cmask1; % turn off clipping
 %T = exp(k0*Omega*X./(1i*consts.c)*dz); % tilting operator, derived by me
-T = 1; % turn off t mask
+T = 1; % turn off tilting
 %R = griddedInterpolant(Y.', X.', E.', 'linear', 'none'); % rotational shearing operator
 
 % Simulation settings
@@ -78,18 +78,20 @@ num_steps = round(L/dz); % number of steps needed for one trip across the cavity
 Es = struct(); % initialize a struct for saving intermediate E fields
 
 % Select video name
-videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.2fm_w0=10cmg.mp4', Omega, L, Rc1, D1);
-v = Set_Up_Video(videoname); % set up the video
+videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.2fm_w0=10cm_notilting.mp4', Omega, L, Rc1, D1);
+[saveFolder, v] = Set_Up_Video(videoname); % set up the video
 open(v);
 
 %% SIMULATION, R --> L, one trip across in small steps
 % Just go once across the cavity
 
+dz = L/1000;
+num_steps = round(L/dz);
 P0 = sum(sum(abs(E).^2)); % initial power
 
 % Clip and shape the beam
-%E = E.*cmask1.*rmask1.*T; % beam leaves from the RHS (mirror1)
-E = E.*cmask1.*T;
+E = E.*cmask1.*rmask1.*T; % beam leaves from the RHS (mirror1)
+%E = E.*cmask1.*T;
 
 for n = 1:num_steps
     step = step + 1;
@@ -109,8 +111,8 @@ for n = 1:num_steps
     FE = FE.*fftshift(H); % propagate beam in frequency domain
     E = ifft2(FE); % transform back to space domain 
     E = T.*E; % apply the tilting mask
-    %E = R(Y.', X.' - dx_pixels).'; % shift the beam, rotational shearing
-    E = interp2(E, (1:N) - Rdx_pixels, (1:N)', 'linear', 0); % shift the beam, rotational shearing
+    alpha = (Omega/consts.c)*Z_position(step)*dz + (Omega/(2*consts.c))*dz^2;  % scalar shift in x
+    E = interp2(X, Y, E, X + alpha, Y, 'linear', 0); % shift the beam, rotational shearing
     
     % Save E field snapshots and write video frame
     if mod(step, save_interval) == 0
@@ -140,13 +142,16 @@ for n = 1:num_steps
 
     % Capture frame
     frame = getframe(gcf);
-    writeVideo(v, frame);
+    %writeVideo(v, frame);
     end
 
     % Rescale 
     % Pk(n) = max(max(abs(E).^2)); % peak intensity at this point
     % E = E*sqrt(P0/sum(sum(abs(E).^2))); % rescale E
     % BeamWidth(n) = sum(sum(sqrt(X.^2+Y.^2).*abs(E).^2))/P0;
+    % Save centers
+    centerx(n) = trapz(trapz(X.*abs(E).^2))/trapz(trapz(abs(E).^2));
+    centery(n) = trapz(trapz(Y.*abs(E).^2))/trapz(trapz(abs(E).^2));
 end
 
 E = E.*cmask2.*rmask2.*T; % beam arrives at the LHS (mirror2)
@@ -196,8 +201,8 @@ for i = 1:num_round_trips
     ylabel('[m]')
     xlabel('[m]')
     title({
-        sprintf('Laser Mode at Z = %.1f m', Z_traveled(step)), ...
-        sprintf('Intra-Cavity Position = %.1f', Z_position(step))
+        sprintf('Laser Mode at Z = %.1f km', Z_traveled(step)*10^(-3)), ...
+        sprintf('Intra-Cavity Position = %.1f km', Z_position(step)*10^(-3))
     })
     hold on;
     plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2); % plot mirror outline
@@ -226,7 +231,7 @@ close(v); % save video
 %% Post-processing
 
 % Trackers used for both numeric and analytic
-dz_post = 1; % little steps across the cavity  
+dz_post = 1500; % little steps across the cavity  
 zs = -L/2 : dz_post : +L/2; % z positions, measured relative to the cavity center, z = 0, [m]
 numSteps = length(zs); % number of steps to be taken for one trip across the cavity
 
