@@ -74,7 +74,7 @@ num_steps = round(L/dz); % number of steps needed for one trip across the cavity
 Es = struct(); % initialize a struct for saving intermediate E fields
 
 % Select video name
-videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.0fm_100trips.mp4', Omega, L, Rc1, D1);
+videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.2fm.mp4', Omega, L, Rc1, D1);
 v = Set_Up_Video(videoname); % set up the video
 open(v);
 
@@ -84,8 +84,8 @@ open(v);
 P0 = sum(sum(abs(E).^2)); % initial power
 
 % Clip and shape the beam
-%E = E.*cmask1.*rmask1.*tmask; % beam leaves from the RHS (mirror1)
-E = E.*cmask1.*tmask;
+E = E.*cmask1.*rmask1.*tmask; % beam leaves from the RHS (mirror1)
+%E = E.*cmask1.*tmask;
 
 for n = 1:num_steps
     step = step + 1;
@@ -103,7 +103,7 @@ for n = 1:num_steps
     FE = fft2(E); % transform beam to frequency domain
     FE = FE.*fftshift(H).*R(Z_position(step), Z_position(step)-dz); % propagate beam in frequency domain 
     E = ifft2(FE); % transform back to space domain 
-    E = tmask.*E.*amask; % apply the tilting mask
+    E = tmask.*E; % apply the tilting mask
     
     % Save E field snapshots and write video frame
     if mod(step, save_interval) == 0
@@ -137,9 +137,9 @@ for n = 1:num_steps
     end
 
     % Rescale 
-    % Pk(n) = max(max(abs(E).^2)); % peak intensity at this point
-    % E = E*sqrt(P0/sum(sum(abs(E).^2))); % rescale E
-    % BeamWidth(n) = sum(sum(sqrt(X.^2+Y.^2).*abs(E).^2))/P0;
+    %Pk(n) = max(max(abs(E).^2)); % peak intensity at this point
+    E = E*sqrt(P0/sum(sum(abs(E).^2))); % rescale E
+    %BeamWidth(n) = sum(sum(sqrt(X.^2+Y.^2).*abs(E).^2))/P0;
 end
 
 E = E.*cmask2.*rmask2.*tmask; % beam arrives at the LHS (mirror2)
@@ -150,13 +150,13 @@ close(v); % save video
 % Set how many round trips across the cavity you want to take.
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
-num_round_trips = 100;
+num_round_trips = 1;
 E = E.*cmask1.*rmask1; % clip and shape the beam before it leaves
 P0 = sum(sum(abs(E).^2)); % initial power
 
 for i = 1:num_round_trips
-    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);    
-    E = E.*cmask2.*rmask2.*tmask;
+    [step, Z_traveled, Z_position, E, Es] = R_L(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, tmask, consts);    
+    %E = E.*cmask2.*rmask2.*tmask;
     
     % Visualization of beam at mirror 2
     I = 0.5*consts.eps0*consts.c*abs(E).^2;
@@ -179,29 +179,29 @@ for i = 1:num_round_trips
     view(2) % 2D view
     getframe();
 
-    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, amask, tmask, consts);
+    [step, Z_traveled, Z_position, E, Es] = L_R(step, Z_traveled, Z_position, E, Es, save_interval, num_steps, dz, L, H, R, tmask, consts);
     E = E.*cmask1.*rmask1.*tmask;
     
-    % Visualization of beam at mirror 1
-    I = 0.5*consts.eps0*consts.c*abs(E).^2;
-    surf(X, Y, I/max(I(:)), 'LineStyle','none');
-    ylabel('[m]')
-    xlabel('[m]')
-    title({
-        sprintf('Laser Mode at Z = %.1f m', Z_traveled(step)), ...
-        sprintf('Intra-Cavity Position = %.1f', Z_position(step))
-    })
-    hold on;
-    plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2); % plot mirror outline
-    hold off;
-    set(gcf,'Color','w'); % white figure background
-    set(gca,'Color','w'); % white axes background
-    axis('square')
-    axis tight;
-    ylim([-1.1*D1, 1.1*D1])
-    xlim([-1.1*D1, 1.1*D1])
-    view(2) % 2D view
-    getframe();
+    % % Visualization of beam at mirror 1
+    % I = 0.5*consts.eps0*consts.c*abs(E).^2;
+    % surf(X, Y, I/max(I(:)), 'LineStyle','none');
+    % ylabel('[m]')
+    % xlabel('[m]')
+    % title({
+    %     sprintf('Laser Mode at Z = %.1f m', Z_traveled(step)), ...
+    %     sprintf('Intra-Cavity Position = %.1f', Z_position(step))
+    % })
+    % hold on;
+    % plot3(x_circ2, y_circ2, zeros(size(x_circ2)), 'r-', 'LineWidth', 2); % plot mirror outline
+    % hold off;
+    % set(gcf,'Color','w'); % white figure background
+    % set(gca,'Color','w'); % white axes background
+    % axis('square')
+    % axis tight;
+    % ylim([-1.1*D1, 1.1*D1])
+    % xlim([-1.1*D1, 1.1*D1])
+    % view(2) % 2D view
+    % getframe();
 
     % Capture frame
     frame = getframe(gcf);
