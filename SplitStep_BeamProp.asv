@@ -27,15 +27,14 @@ dz = L/Nz; % step size, [m]
 dt = dz/c; % time step, [s]
 
 % Rotation
-Omega = 0; % rotational velocity, [rad/sec]
-alpha = 0; % rotational acceleration, [rad/sec^2]
+Omega = -0.01; % rotational velocity, [rad/sec]
+alpha = 10; % rotational acceleration, [rad/sec^2]
 
 % Acceleration
 v_perp = 0; % initial transverse velocity, [m/s]
-accel = 0; % transverse acceleration, [m/s^2]
+accel = 10000; % transverse acceleration, [m/s^2]
 Theta = 0; % initial transverse acceleration tilt, [rad]
 
-% SIMULATION PARAMETERS
 N = 511; % sampling number
 dx = Lx/N; % step size 
 
@@ -82,7 +81,7 @@ for i = 1:Nz-1
     
     % Phase screen implementation for tilt terms
     A = exp(-1i * k0 * Omega_mid / c * Xint); % rotational tilt phase screen
-    B = exp(-1i * k0 * Theta.*X); % transverse acceleration tilt phase screen
+    B = exp(-1i * k0* Theta.*X); % transverse acceleration tilt phase screen
     Gau = Gau .* A .* B; % apply tilt
     
     % Implementation of shift interpolation
