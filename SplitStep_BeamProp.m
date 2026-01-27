@@ -27,12 +27,12 @@ dz = L/Nz; % step size, [m]
 dt = dz/c; % time step, [s]
 
 % Rotation
-Omega = 0; % rotational velocity, [rad/sec]
+Omega = 0.01; % rotational velocity, [rad/sec]
 alpha = 0; % rotational acceleration, [rad/sec^2]
 
 % Acceleration
 v_perp = 0; % initial transverse velocity, [m/s]
-accel = 0; % transverse acceleration, [m/s^2]
+accel = 10000; % transverse acceleration, [m/s^2]
 Theta = 0; % initial transverse acceleration tilt, [rad]
 
 % SIMULATION PARAMETERS
@@ -67,7 +67,8 @@ for i = 1:Nz-1
   
     v_perp = v_perp + accel*dt; % transverse velocity
     %dx_frame = v_perp*dt; % frame translation this step
-    Theta = v_perp/c; % tilt due to transverse acceleration
+    dv = accel*dt; % step in velocity
+    Theta = dv/c; % tilt due to transverse acceleration
 
     % Propagation using angular spectrum method (Schmidt et al.)
     [x2dum, Gau] = ang_spec_prop(Gau,Ld,dx,dx,dz);
@@ -99,7 +100,9 @@ for i = 1:Nz-1
 
 end
 
-x_ana = -Omega/c * (z.^2 + 0.5*L*z); % analytic solution from ray optics
+x_rot = -Omega/c * (z.^2 + 0.5*L*z);
+x_acc = (v0/c)*(z - Z0) + (accel/(2*c^2))*(z - Z0).^2;
+x_ana = x_rot + x_acc; % analytic solution from ray optics
 
 %imagesc(abs(Gau)); title('Beam Profile'); getframe(); display(z(i));
 
@@ -107,7 +110,8 @@ x_ana = -Omega/c * (z.^2 + 0.5*L*z); % analytic solution from ray optics
 figure;
 title({'Displacement in x Over Propagation', '\dOmega = %f', alpha})
 plot(centerx,z,'b','DisplayName','Numeric'); hold on;
-plot(x_ana,z,'r','DisplayName','Analytic'); 
+%plot(x_rot,z,'g','DisplayName','Analytic rotational'); 
+plot(x_ana,z,'r','DisplayName','Analytic')
 xlabel('Displacement [m]'); ylabel('Distance [m]');
 legend();
 

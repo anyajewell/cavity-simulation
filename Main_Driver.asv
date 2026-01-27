@@ -1,0 +1,67 @@
+clear all;
+clc;
+figure;
+
+% Constants
+c = 3e8; % [m/s]
+
+% USER SETTINGS
+
+% Simulation parameters
+Lx = 2; % Length of square transverse domain (one side), [m]
+N = 511; % sampling number
+dx = Lx/N; % step size 
+
+% Laser
+Ld = 1064*1e-9; % Laser wavelength, [m]
+w0 = 1e-1; % initial beam width, [m]
+k0 = (2*pi)/Ld; % wavenumber
+
+Zmax = 40e3; % destination of z, [m] 
+Z0 = -Zmax; % starting location, [m]
+t0 = 0; % starting time, [s]
+v0 = 0; % starting transverse velocity, [m/s]
+L = Zmax - Z0; % cavity length, [m]
+Nz = 1e2; % number of steps
+dz = L/Nz; % step size, [m]
+dt = dz/c; % time step, [s]
+
+% Rotation
+Omega = 0.01; % rotational velocity, [rad/sec]
+alpha = 0; % rotational acceleration, [rad/sec^2]
+
+% Acceleration
+v_perp = 0; % initial transverse velocity, [m/s]
+accel = 10000; % transverse acceleration, [m/s^2]
+Theta = 0; % initial transverse acceleration tilt, [rad]
+
+[x, y, X, Y] = Create_Grid(N, Lx, dx);
+
+% Set up video
+videoname = sprintf('Omega=%.3f_L=%.0fm.mp4', Omega, L);
+[saveFolder, v] = Set_Up_Video(videoname);
+
+% Gaussian Beam in space domain
+Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
+
+% Beam propagation in inhomogeneous iterative Loop 
+Gau = Gau_ini; 
+% Centroid locations to begin
+centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
+centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
+z = linspace(Z0,Zmax,Nz); % z locations to evaluate field
+
+[Gau, centerx, centery] = Prop(Gau, Omega, accel, dt, c, Nz, Ld, dx, dz, x, y, z, X, Y, k0, v, centerx, centery); % propagation loop
+
+x_rot = -Omega/c * (z.^2 + 0.5*L*z);
+x_acc = (v0/c)*(z - Z0) + (accel/(2*c^2))*(z - Z0).^2;
+x_ana = x_rot + x_acc; % analytic solution from ray optics
+
+Plot_Results_vs_Analytic(centerx, x_ana, z) % plot results of propagation
+
+close(v);
+
+
+
+
+
