@@ -55,7 +55,6 @@ x_ana = x_rot + x_acc; % analytic solution from ray optics
 
 % Plotting
 Plot_Results_vs_Analytic(centerx, x_ana, z) % plot results of propagation
-plot(x_rot, z, 'g')
 
 close(v);
 
