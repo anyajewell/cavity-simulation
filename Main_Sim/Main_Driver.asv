@@ -17,7 +17,7 @@ k0 = (2*pi)/Ld; % wavenumber
 Zmax = 40e3; % destination of z, [m] 
 Z0 = -Zmax; % starting location, [m]
 t0 = 0; % starting time, [s]
-v0 = 0; v_perp = v0; % starting transverse velocity, [m/s]
+v0 = 0; % starting transverse velocity, [m/s]
 L = Zmax - Z0; % cavity length, [m]
 Nz = 1e2; % number of steps
 dz = L/Nz; % step size, [m]
@@ -42,7 +42,7 @@ centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
 for i = 1:Nz-1
     Omega = Omega; % chance to change
     accel = accel; % chance to change
-    [Gau, centerx, centery] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz, z, X, Y, k0, centerx, centery, i); % propagation loop
+    [Gau, centerx, centery] = Prop(Gau, Omega, accel, dt, c, Nz, Ld, dx, dz, x, y, z, X, Y, k0, centerx, centery, i); % propagation loop
     imagesc(x,y,abs(Gau)); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]'); 
     hold on; plot(centerx(i+1),centery(i+1),'ro'); hold off; frame = getframe(gcf); display(z(i));
     writeVideo(v,frame);
@@ -54,8 +54,7 @@ x_acc = (v0/c)*(z - Z0) + (accel/(2*c^2))*(z - Z0).^2;
 x_ana = x_rot + x_acc; % analytic solution from ray optics
 
 % Plotting
-Plot_Results_vs_Analytic(centerx, x_ana, z) % plot results of propagation
-plot(x_rot, z, 'g')
+Plot_Results_vs_Analytic(centerx, x_rot, z) % plot results of propagation
 
 close(v);
 
