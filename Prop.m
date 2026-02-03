@@ -1,5 +1,5 @@
-function [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz, x, y, z, X, Y, k0, v, centerx, centery, i)
-
+function [Gau, centerx, centery] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz, x, y, z, X, Y, k0, v, centerx, centery, i)
+    
     %v_perp = v_perp + accel*dt; % transverse velocity
     %dx_frame = v_perp*dt; % frame translation this step
     dv = accel*dt; % step in velocity
@@ -30,6 +30,6 @@ function [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz,
     imagesc(x,y,abs(Gau)); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]'); 
     hold on; plot(centerx(i+1),centery(i+1),'ro'); hold off; frame = getframe(gcf); display(z(i));
     writeVideo(v,frame);
-
+      
 end
 

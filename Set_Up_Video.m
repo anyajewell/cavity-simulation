@@ -1,0 +1,18 @@
+function [saveFolder, v] = Set_Up_Video(videoname)    
+
+    % Prepare video writer
+    todayStr = datestr(now, 'yyyy-mm-dd');
+    saveFolder = fullfile('C:\Users\jewellan\Documents\MATLAB\ORACLE\Results', todayStr); % for local saving
+    %saveFolder = fullfile('C:\Users\jewellan\Documents\GitHub\cavity-simulation\Results', todayStr); % for Git saving
+    
+    if ~exist(saveFolder, 'dir')
+        mkdir(saveFolder);
+    end
+    
+    filePath = fullfile(saveFolder, videoname);
+    v = VideoWriter(filePath, 'MPEG-4');
+    v.FrameRate = 10; % adjust playback speed
+    v.Quality = 95;
+    open(v)
+
+end
