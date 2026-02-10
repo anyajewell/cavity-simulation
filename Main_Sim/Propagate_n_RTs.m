@@ -6,19 +6,16 @@ function [Gau, loss_frac] = Propagate_n_RTs(RTs, Gau, Nz, Omega, accel, dt, c, L
         % L --> R
         for i = 1:Nz
             pos = z(i); % current position
+            Omega = Omega; % opportunity to read/update Omega from other code
+            accel = accel; % opportunity to read/update accel from other code
             if pos + dz > L/2 
                 dz1 = Zmax-pos; 
                 if dz1 == 0 % beam already at mirror
                     break
                 else % propagate by fractional step to L (?)
                 [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz1, x, y, z, X, Y, k0, v, centerx, centery, i); % propagate fractional step to mirror
-                Gau = Gau.*cmask1.*rmask1; % clip and shape the beam
-                dz2 = dz-dz1;
-                [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz2, x, y, z, X, Y, k0, v, centerx, centery, i); % propogate fractional step back
                 end
             else % propagate by dz, as normal
-                Omega = Omega; % opportunity to read/update Omega from other code
-                accel = accel; % opportunity to read/update accel from other code
                 [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz, x, y, z, X, Y, k0, v, centerx, centery, i); % propagation loop
             end
         end
@@ -30,19 +27,16 @@ function [Gau, loss_frac] = Propagate_n_RTs(RTs, Gau, Nz, Omega, accel, dt, c, L
         % R --> L
         for i = 1:Nz
             pos = z(i); % current position
+            Omega = Omega; % opportunity to read/update Omega from other code
+            accel = accel; % opportunity to read/update accel from other code
             if pos + dz < -L/2 
                 dz1 = Zmax-pos; 
                 if dz1 == 0 % beam already at mirror
                     break
                 else % propagate by fractional step to L (?)
                 [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz1, x, y, z, X, Y, k0, v, centerx, centery, i); % propagate fractional step to mirror
-                Gau = Gau.*cmask2.*rmask2; % clip and shape the beam
-                dz2 = dz-dz1;
-                [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz2, x, y, z, X, Y, k0, v, centerx, centery, i); % propogate fractional step back
                 end
             else % propagate by dz, as normal
-                Omega = Omega; % opportunity to read/update Omega from other code
-                accel = accel; % opportunity to read/update accel from other code
                 [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz, x, y, z, X, Y, k0, v, centerx, centery, i); % propagation loop
             end
         end
