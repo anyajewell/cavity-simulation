@@ -51,6 +51,12 @@ videoname = sprintf('Omega=%.3f_L=%.0f_D=%.2f_RTs=%.0f.mp4', Omega, L, D1, RTs);
 [x, y, X, Y] = Create_Grid(N, Lx, dx);
 Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
 z = linspace(Z0,Zmax,Nz); % z locations to evaluate field
+z2 = linspace(Zmax,Z0,Nz); % other half, going other way
+RT = [z, z2]; % represents all positions being evaluated within one round-trip
+zs = [];
+for i = 1:RTs
+    zs = [zs, RT];
+end
 t = linspace(t0,tmax,Nz); % timesteps
 Gau = Gau_ini;
 centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
@@ -63,9 +69,12 @@ rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
 cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
 cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
 
+% Settings 
+track_centers = true;
+
 %%
 % Propagate
-[Gau, loss_frac] = Propagate_n_RTs(RTs, Gau, Nz, Omega, accel, dt, c, Ld, dx, dz, x, y, z, X, Y, k0, v, centerx, centery, cmask1, cmask2, rmask1, rmask2, L, Zmax);
+[Gau, loss_frac, centerx, centery] = Propagate_n_RTs(RTs, Gau, Nz, Omega, accel, dt, c, Ld, dx, dz, x, y, z, X, Y, k0, v, centerx, centery, cmask1, cmask2, rmask1, rmask2, L, Zmax, track_centers);
 
 %%
 % Rescale 
@@ -79,8 +88,9 @@ x_acc = (v0/c)*(z - Z0) + (accel/(2*c^2))*(z - Z0).^2;
 x_ana = x_rot + x_acc; % analytic solution from ray optics
 
 % Plotting
-Plot_Results_vs_Analytic(centerx, x_ana, z) % plot results of propagation
+%Plot_Results_vs_Analytic(centerx, x_ana, z) % plot results of propagation
 Plot_Loss_Over_Prop(loss_frac, RTs)
+Plot_Center(centerx, zs)
 
 close(v);
 

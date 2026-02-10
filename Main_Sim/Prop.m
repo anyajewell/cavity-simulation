@@ -1,4 +1,4 @@
-function [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz, x, y, z, X, Y, k0, v, centerx, centery, i)
+function [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz, x, y, z, X, Y, k0, v, centerx, centery, i, track_centers)
 
     %v_perp = v_perp + accel*dt; % transverse velocity
     %dx_frame = v_perp*dt; % frame translation this step
@@ -24,11 +24,16 @@ function [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz,
     % Implementation of shift interpolation
     Gau = interp2(Xnew,Y,Gau,X,Y,'spline'); % interpolate onto the new grid
     
-    centerx(i+1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2)); % track center x
-    centery(i+1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2)); % track center y
+    if track_centers == true
+        centerx(end+1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2)); % track center x
+        centery(end+1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2)); % track center y
+    end
 
-    imagesc(x,y,abs(Gau)); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]'); 
-    hold on; plot(centerx(i+1),centery(i+1),'ro'); hold off; frame = getframe(gcf); display(z(i));
+    imagesc(x,y,abs(Gau)); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]'); hold on; 
+    if track_centers == true
+        plot(centerx(end),centery(end),'ro'); hold off;
+    end
+    frame = getframe(gcf); display(z(i));
     writeVideo(v,frame);
 
 end
