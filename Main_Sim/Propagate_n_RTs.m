@@ -62,19 +62,20 @@ function [Gau, loss_frac, centerx, centery] = Propagate_n_RTs(RTs, Gau, Nz, Omeg
     
         % Interact with mirror (LHS)
         theta_x2 = 0; theta_y2 = 0; % query mirror misalignment
-        if a == 45
-            theta_x2 = 1.5e-6; theta_y2 = 1.5e-6;
+        if a == 30
+            theta_x2 = 1.5e-7; theta_y2 = 1.5e-7;
         end
         phi_tilt2 = 2*k0*(theta_x2*X + theta_y2*Y);
         tmask2 = exp(1i*phi_tilt2); % tilt mask
         Gau = Gau.*cmask2.*rmask2.*tmask2; % clip and shape the beam
         [Zmax, dz, z] = Turn_Around(Zmax, dz, Nz);
 
-        imagesc(x,y,abs(Gau)); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]'); hold on; 
+        % Visualization
+        imagesc(x,y,abs(Gau)); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]');  
+        set(gcf, 'Color', 'w'); set(gca, 'Color', 'w'); hold on;
         if track_centers == true
             plot(centerx(end),centery(end),'ro'); hold off;
         end
-        
         frame = getframe(gcf); display(z(i));
         writeVideo(v,frame);
     
