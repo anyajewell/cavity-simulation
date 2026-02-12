@@ -10,8 +10,8 @@ function [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz,
     
     % New X-position after trajectory along characteristic curve
     rot_shift = 0.5*Omega/c * (z(i+1).^2-z(i).^2);
-    Xnew = X - rot_shift;
-    %xnew = x - rot_shift;
+    %Xnew = X - rot_shift;
+    xnew = x - rot_shift;
     
     % Analytic integration of phase term along characteristic 
     Xint = X*(z(i+1)-z(i)) - 0.5*Omega/c * ...
@@ -23,8 +23,8 @@ function [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz,
     Gau = Gau .* A .* B; % apply tilt
     
     % Implementation of shift interpolation
-    %Gau = interp1(xnew, Gau.', x, 'linear', 0).';
-    Gau = interp2(Xnew,Y,Gau,X,Y,'spline'); % interpolate onto the new grid
+    Gau = interp1(xnew, Gau.', x, 'linear', 0).';
+    %Gau = interp2(Xnew,Y,Gau,X,Y,'spline'); % interpolate onto the new grid
     
     if track_centers == true
         centerx(end+1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2)); % track center x
