@@ -6,11 +6,12 @@ function [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz,
     dTheta = dv/c; % tilt due to transverse acceleration
 
     % Propagation using angular spectrum method (Schmidt et al.)
-    [x2dum, Gau] = ang_spec_prop(Gau,Ld,dx,dx,dz);
+    [~, Gau] = ang_spec_prop(Gau,Ld,dx,dx,dz);
     
     % New X-position after trajectory along characteristic curve
     rot_shift = 0.5*Omega/c * (z(i+1).^2-z(i).^2);
     Xnew = X - rot_shift;
+    %xnew = x - rot_shift;
     
     % Analytic integration of phase term along characteristic 
     Xint = X*(z(i+1)-z(i)) - 0.5*Omega/c * ...
@@ -22,6 +23,7 @@ function [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz,
     Gau = Gau .* A .* B; % apply tilt
     
     % Implementation of shift interpolation
+    %Gau = interp1(xnew, Gau.', x, 'linear', 0).';
     Gau = interp2(Xnew,Y,Gau,X,Y,'spline'); % interpolate onto the new grid
     
     if track_centers == true
@@ -29,12 +31,14 @@ function [Gau, centerx, centery, v] = Prop(Gau, Omega, accel, dt, c, Ld, dx, dz,
         centery(end+1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2)); % track center y
     end
 
-    imagesc(x,y,abs(Gau)); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]'); hold on; 
-    if track_centers == true
-        plot(centerx(end),centery(end),'ro'); hold off;
-    end
-    frame = getframe(gcf); display(z(i));
-    writeVideo(v,frame);
+    % Plot every step here
+    % imagesc(x,y,abs(Gau)); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]'); hold on; 
+    % if track_centers == true
+    %     plot(centerx(end),centery(end),'ro'); hold off;
+    % end
+    % 
+    % frame = getframe(gcf); display(z(i));
+    % writeVideo(v,frame);
 
 end
 

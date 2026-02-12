@@ -27,6 +27,14 @@ function [Gau, loss_frac, centerx, centery] = Propagate_n_RTs(RTs, Gau, Nz, Omeg
         % Interact with mirror (RHS)
         Gau = Gau.*cmask1.*rmask1; % clip and shape the beam
         [Zmax, dz, z] = Turn_Around(Zmax, dz, Nz);
+
+        imagesc(x,y,abs(Gau)); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]'); hold on; 
+        if track_centers == true
+            plot(centerx(end),centery(end),'ro'); hold off;
+        end
+        
+        frame = getframe(gcf); display(z(i));
+        writeVideo(v,frame);
     
         % R --> L
         for i = 1:Nz
@@ -52,6 +60,14 @@ function [Gau, loss_frac, centerx, centery] = Propagate_n_RTs(RTs, Gau, Nz, Omeg
         % Interact with mirror (LHS)
         Gau = Gau.*cmask2.*rmask2; % clip and shape the beam
         [Zmax, dz, z] = Turn_Around(Zmax, dz, Nz);
+
+        imagesc(x,y,abs(Gau)); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]'); hold on; 
+        if track_centers == true
+            plot(centerx(end),centery(end),'ro'); hold off;
+        end
+        
+        frame = getframe(gcf); display(z(i));
+        writeVideo(v,frame);
     
         % Calculate and store loss
         loss_a =  1 - sum(abs(Gau),'all') / sum(abs(Gau_a).^2,'all'); % loss this time

@@ -24,13 +24,13 @@ Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
 dz = L/Nz; % step size, [m]
 dt = dz/c; % time step, [s]
 tmax = dt*Nz; % max time, [s]
-Omega = 0.01; % rotational velocity, [rad/sec]
-accel = 10000; % transverse acceleration, [m/s^2]
-RTs = 2; % number of round trips to take
+Omega = 0.001; % rotational velocity, [rad/sec]
+accel = 1; % transverse acceleration, [m/s^2]
+RTs = 10; % number of round trips to take
 
 D1 = 0.7; % large size to reduce clipping, [m]
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = L*2; % radius of curvature for mirror 1, [m]
+Rc1 = L; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
 
 % Set up mirror circles for plotting
@@ -72,7 +72,7 @@ cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
 % Settings 
 track_centers = true;
 
-%%
+%
 % Propagate
 [Gau, loss_frac, centerx, centery] = Propagate_n_RTs(RTs, Gau, Nz, Omega, accel, dt, c, Ld, dx, dz, x, y, z, X, Y, k0, v, centerx, centery, cmask1, cmask2, rmask1, rmask2, L, Zmax, track_centers);
 
