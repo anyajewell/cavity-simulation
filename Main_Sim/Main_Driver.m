@@ -26,7 +26,7 @@ dt = dz/c; % time step, [s]
 tmax = dt*Nz; % max time, [s]
 Omega = 0.001; % rotational velocity, [rad/sec]
 accel = 1; % transverse acceleration, [m/s^2]
-RTs = 10; % number of round trips to take
+RTs = 5; % number of round trips to take
 
 D1 = 1; % large size to reduce clipping, [m]
 D2 = D1; % diameter of mirror 2, [m]

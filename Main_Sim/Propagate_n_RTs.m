@@ -25,7 +25,10 @@ function [Gau, loss_frac, centerx, centery] = Propagate_n_RTs(RTs, Gau, Nz, Omeg
         end
     
         % Interact with mirror (RHS)
-        Gau = Gau.*cmask1.*rmask1; % clip and shape the beam
+        theta_x1 = 0; theta_y1 = 0; % query mirror misalignment
+        phi_tilt1 = 2*k0*(theta_x1*X + theta_y1*Y);
+        tmask1 = exp(1i*phi_tilt1); % tilt mask
+        Gau = Gau.*cmask1.*rmask1.*tmask1; % clip and shape the beam
         [Zmax, dz, z] = Turn_Around(Zmax, dz, Nz);
 
         imagesc(x,y,abs(Gau)); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]'); hold on; 
@@ -58,7 +61,10 @@ function [Gau, loss_frac, centerx, centery] = Propagate_n_RTs(RTs, Gau, Nz, Omeg
         end
     
         % Interact with mirror (LHS)
-        Gau = Gau.*cmask2.*rmask2; % clip and shape the beam
+        theta_x2 = 0; theta_y2 = 0; % query mirror misalignment
+        phi_tilt2 = 2*k0*(theta_x2*X + theta_y2*Y);
+        tmask2 = exp(1i*phi_tilt2); % tilt mask
+        Gau = Gau.*cmask2.*rmask2.*tmask2; % clip and shape the beam
         [Zmax, dz, z] = Turn_Around(Zmax, dz, Nz);
 
         imagesc(x,y,abs(Gau)); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]'); hold on; 

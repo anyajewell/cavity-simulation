@@ -11,7 +11,7 @@ function fig = Plot_Center(center, zs)
     fig = figure;
     hold on
 
-    % Color parameter
+    % Color parameter (use index so it always increases monotonically)
     t = 1:length(center);
 
     surface([center; center], ...
@@ -22,7 +22,8 @@ function fig = Plot_Center(center, zs)
             'edgecolor','interp', ...
             'linewidth',2);
 
-    colormap(turbo)   
+    colormap(turbo)   % try parula, turbo, jet, hsv, etc.
+    colorbar
     xlabel('Displacement [m]');
     ylabel('Distance [m]');
     title('Beam Center Over Propagation');
