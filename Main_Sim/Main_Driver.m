@@ -25,8 +25,8 @@ dz = L/Nz; % step size, [m]
 dt = dz/c; % time step, [s]
 tmax = dt*Nz; % max time, [s]
 Omega = 0.001; % rotational velocity, [rad/sec]
-accel = 1; % transverse acceleration, [m/s^2]
-RTs = 5; % number of round trips to take
+accel = 1.92e-5; % transverse acceleration, [m/s^2]
+RTs = 50; % number of round trips to take
 
 D1 = 1; % large size to reduce clipping, [m]
 D2 = D1; % diameter of mirror 2, [m]
@@ -38,7 +38,7 @@ zr = pi*w0^2/Ld; % Rayleigh range
 wz = w0*sqrt(1+(L/zr).^2); % spot size, analytic solution
 
 % Set up video
-videoname = sprintf('Omega=%.3f_L=%.0f_D=%.2f_RTs=%.0f.mp4', Omega, L, D1, RTs);
+videoname = sprintf('Omega=%.3f_accel=%.2e_L=%.0f_D=%.2f_RTs=%.0f.mp4', Omega, accel, L, D1, RTs);
 [saveFolder, v] = Set_Up_Video(videoname);
 
 % Set up simulation
