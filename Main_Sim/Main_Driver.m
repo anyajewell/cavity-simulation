@@ -25,12 +25,12 @@ dz = L/Nz; % step size, [m]
 dt = dz/c; % time step, [s]
 tmax = dt*Nz; % max time, [s]
 Omega = 0.001; % rotational velocity, [rad/sec]
-accel = 1.92e-5; % transverse acceleration, [m/s^2]
-RTs = 50; % number of round trips to take
+accel = 1e-5; % transverse acceleration, [m/s^2]
+RTs = 10; % number of round trips to take
 
 D1 = 1; % large size to reduce clipping, [m]
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = 2*L; % radius of curvature for mirror 1, [m]
+Rc1 = L; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
 
 % Calculations

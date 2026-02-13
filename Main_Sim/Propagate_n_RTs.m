@@ -63,7 +63,7 @@ function [Gau, loss_frac, centerx, centery] = Propagate_n_RTs(RTs, Gau, Nz, Omeg
         % Interact with mirror (LHS)
         theta_x2 = 0; theta_y2 = 0; % query mirror misalignment
         if a == 30
-            theta_x2 = 1.5e-7; theta_y2 = 1.5e-7;
+            theta_x2 = 0.5e-6; theta_y2 = 0.5e-6;
         end
         phi_tilt2 = 2*k0*(theta_x2*X + theta_y2*Y);
         tmask2 = exp(1i*phi_tilt2); % tilt mask

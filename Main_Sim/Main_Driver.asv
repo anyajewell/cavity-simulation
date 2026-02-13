@@ -7,7 +7,7 @@ c = 3e8; % [m/s]
 eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Simulation parameters
-Lx = 2; % Length of square transverse domain (one side), [m]
+Lx = 4; % Length of square transverse domain (one side), [m]
 N = 511; % sampling number
 dx = Lx/N; % step size 
 
@@ -25,12 +25,12 @@ dz = L/Nz; % step size, [m]
 dt = dz/c; % time step, [s]
 tmax = dt*Nz; % max time, [s]
 Omega = 0.001; % rotational velocity, [rad/sec]
-accel = 1; % transverse acceleration, [m/s^2]
-RTs = 10; % number of round trips to take
+accel = 1.92e-5; % transverse acceleration, [m/s^2]
+RTs = 50; % number of round trips to take
 
-D1 = 1; % large size to reduce clipping, [m]
+D1 = .5; % large size to reduce clipping, [m]
 D2 = D1; % diameter of mirror 2, [m]
-Rc1 = 2*L; % radius of curvature for mirror 1, [m]
+Rc1 = L; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
 
 % Calculations
@@ -38,7 +38,7 @@ zr = pi*w0^2/Ld; % Rayleigh range
 wz = w0*sqrt(1+(L/zr).^2); % spot size, analytic solution
 
 % Set up video
-videoname = sprintf('Omega=%.3f_L=%.0f_D=%.2f_RTs=%.0f.mp4', Omega, L, D1, RTs);
+videoname = sprintf('Omega=%.3f_accel=%.2e_L=%.0f_D=%.2f_RTs=%.0f.mp4', Omega, accel, L, D1, RTs);
 [saveFolder, v] = Set_Up_Video(videoname);
 
 % Set up simulation
