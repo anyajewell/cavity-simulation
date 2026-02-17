@@ -1,4 +1,4 @@
-function [laser, outputs] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles)
+function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium)
 
     for a = 1:sim.RTs
         Gau_a = laser.Gau; % beam profile at the start of this round trip
@@ -24,7 +24,11 @@ function [laser, outputs] = Propagate_n_RTs(consts, sim, laser, frame, mirror, o
             end
         end
     
-        % Interact with mirror (RHS)
+        % Interact with mirror 1 (RHS)
+        % Gain medium present at mirror 1
+        I = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % laser intensity profile
+        gain_medium.g = gain_medium.g0_profile ./ (1 + I/gain_medium.I_sat); % gain function
+        laser.Gau = laser.Gau.*exp(gain_medium.g/2); % rescale electric field
         theta_x1 = 0; theta_y1 = 0; % query mirror misalignment
         phi_tilt1 = 2*laser.k0*(theta_x1*sim.X + theta_y1*sim.Y);
         mirror(1).tmask = exp(1i*phi_tilt1); % tilt mask
@@ -60,11 +64,11 @@ function [laser, outputs] = Propagate_n_RTs(consts, sim, laser, frame, mirror, o
             end
         end
     
-        % Interact with mirror (LHS)
+        % Interact with mirror 2 (LHS)
         theta_x2 = 0; theta_y2 = 0; % query mirror misalignment
-        if a == 30
-            theta_x2 = 0.5e-6; theta_y2 = 0.5e-6;
-        end
+        % if a == 30
+        %     theta_x2 = 0.5e-6; theta_y2 = 0.5e-6;
+        % end
         phi_tilt2 = 2*laser.k0*(theta_x2*sim.X + theta_y2*sim.Y);
         mirror(2).tmask = exp(1i*phi_tilt2); % tilt mask
         laser.Gau = laser.Gau.*mirror(2).cmask.*mirror(2).rmask.*mirror(2).tmask; % clip and shape the beam
@@ -78,10 +82,11 @@ function [laser, outputs] = Propagate_n_RTs(consts, sim, laser, frame, mirror, o
         end
         f = getframe(gcf); display(sim.z(i));
         writeVideo(outputs.v,f);
-    
+   
         % Calculate and store loss
         loss_a =  1 - sum(abs(laser.Gau).^2,'all') / sum(abs(Gau_a).^2,'all'); % loss this time
         outputs.loss_frac(a) = loss_a;
+
     end
 
     if toggles.track_centers == true % fix counting

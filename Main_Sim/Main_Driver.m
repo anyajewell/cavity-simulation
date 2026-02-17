@@ -2,13 +2,14 @@ clear all;
 clc;
 figure;
 
-[consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim();
+% Simulation
+[consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(); % initialize
+[gain_medium] = Initialize_Gain_Medium(sim, mirror);
 
 %%
-% Propagate
-[laser, outputs] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles);
+[laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % propagate
 
-%%
+%% Post-Processing
 % Rescale 
 % Pk(i) = max(max(abs(E).^2)); % peak intensity at this point
 % E = E*sqrt(P0/sum(sum(abs(E).^2))); % rescale E
