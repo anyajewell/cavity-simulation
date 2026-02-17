@@ -2,73 +2,11 @@ clear all;
 clc;
 figure;
 
-% Constants
-c = 3e8; % [m/s]
-eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
+[consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim();
 
-% Simulation parameters
-Lx = 4; % Length of square transverse domain (one side), [m]
-N = 511; % sampling number
-dx = Lx/N; % step size 
-
-% Initial conditions
-Ld = 1064*1e-9; % Laser wavelength, [m]
-w0 = 1e-1; % initial beam width, [m]
-k0 = (2*pi)/Ld; % wavenumber
-Zmax = 75e3; % destination of z, [m] 
-Z0 = -Zmax; % starting location, [m]
-t0 = 0; t(1) = t0; % starting time, [s]
-v0 = 0; % starting transverse velocity, [m/s]
-L = abs(Zmax - Z0); % cavity length, [m]
-Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
-dz = L/Nz; % step size, [m]
-dt = dz/c; % time step, [s]
-tmax = dt*Nz; % max time, [s]
-Omega = 0.001; % rotational velocity, [rad/sec]
-accel = 1.92e-5; % transverse acceleration, [m/s^2]
-RTs = 50; % number of round trips to take
-
-D1 = .5; % large size to reduce clipping, [m]
-D2 = D1; % diameter of mirror 2, [m]
-Rc1 = L; % radius of curvature for mirror 1, [m]
-Rc2 = Rc1; % radius of curvature for mirror 2, [m]
-
-% Calculations
-zr = pi*w0^2/Ld; % Rayleigh range
-wz = w0*sqrt(1+(L/zr).^2); % spot size, analytic solution
-
-% Set up video
-videoname = sprintf('Omega=%.3f_accel=%.2e_L=%.0f_D=%.2f_RTs=%.0f.mp4', Omega, accel, L, D1, RTs);
-[saveFolder, v] = Set_Up_Video(videoname);
-
-% Set up simulation
-[x, y, X, Y] = Create_Grid(N, Lx, dx);
-Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
-z = linspace(Z0,Zmax,Nz); % z locations to evaluate field
-z2 = linspace(Zmax,Z0,Nz); % other half, going other way
-RT = [z, z2]; % represents all positions being evaluated within one round-trip
-zs = [];
-for i = 1:RTs
-    zs = [zs, RT];
-end
-t = linspace(t0,tmax,Nz); % timesteps
-Gau = Gau_ini;
-centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
-centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
-loss_frac = zeros(1, RTs);
- 
-% Mirror masks: reflecting lens phase screens and clipping masks
-rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
-rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
-cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
-cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
-
-% Settings 
-track_centers = true;
-
-%
+%%
 % Propagate
-[Gau, loss_frac, centerx, centery] = Propagate_n_RTs(RTs, Gau, Nz, Omega, accel, dt, c, Ld, dx, dz, x, y, z, X, Y, k0, v, centerx, centery, cmask1, cmask2, rmask1, rmask2, L, Zmax, track_centers);
+[laser, outputs] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles);
 
 %%
 % Rescale 
@@ -77,7 +15,7 @@ track_centers = true;
 % BeamWidth(i) = sum(sum(sqrt(X.^2+Y.^2).*abs(E).^2))/P0;
 
 % Analytic solution
-x_rot = -Omega/c * (z.^2 + 0.5*L*z);
+x_rot = -frame.Omega/coc * (z.^2 + 0.5*L*z);
 x_acc = (v0/c)*(z - Z0) + (accel/(2*c^2))*(z - Z0).^2;
 x_ana = x_rot + x_acc; % analytic solution from ray optics
 

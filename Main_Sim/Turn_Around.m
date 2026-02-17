@@ -1,9 +1,9 @@
-function [Zmax, dz, z] = Turn_Around(Zmax, dz, Nz)
+function [sim] = Turn_Around(sim)
 
     % Turn around
-    Zmax = -Zmax;
-    Z0 = -Zmax;
-    dz = -dz;
-    z = linspace(Z0,Zmax,Nz);
+    sim.Zmax = -sim.Zmax;
+    sim.Z0 = -sim.Zmax;
+    sim.dz = -sim.dz;
+    sim.z = linspace(sim.Z0,sim.Zmax,sim.Nz);
 
 end
