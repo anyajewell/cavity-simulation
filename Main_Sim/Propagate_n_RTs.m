@@ -29,9 +29,12 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
     
         % Interact with mirror 1 (RHS)
         if toggles.gain_switch == true % Gain medium present at mirror 1
+            P_before = sim.dx*sim.dx*sum(abs(laser.Gau).^2,'all');
             I = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % laser intensity profile
-            gain_medium.g = gain_medium.g0_profile ./ (1 + I/gain_medium.I_sat); % gain function
+            gain_medium.g = gain_medium.g0_profile ./ (1 + I./gain_medium.I_sat); % gain function
             laser.Gau = laser.Gau.*exp(gain_medium.g/2); % rescale electric field
+            P_after = sim.dx*sim.dx*sum(abs(laser.Gau).^2,'all');
+            outputs.gain(end+1) = P_after / P_before;
         end
 
         theta_x1 = 0; theta_y1 = 0; % query mirror misalignment

@@ -5,7 +5,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     consts.c = c; consts.eps0 = eps0;
     
     % Grid
-    Lx = 4; % Length of square transverse domain (one side), [m]
+    Lx = 8; % Length of square transverse domain (one side), [m]
     N = 511; % sampling number
     dx = Lx/N; % step size 
     sim.Lx = Lx; sim.N = N; sim.dx = dx;
@@ -16,7 +16,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     k0 = (2*pi)/Ld; % wavenumber
     laser.Ld = Ld; laser.w0 = w0; laser.k0 = k0;
     
-    % Frame settings
+    % Interlink frame settings
     Omega = 0.001; % rotational velocity, [rad/sec]
     accel = 1e-5; % transverse acceleration, [m/s^2]
     v0 = 0; % starting transverse velocity, [m/s]
@@ -31,7 +31,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     t0 = 0; t(1) = t0;
     dt = dz/c; % time step, [s]
     tmax = dt*Nz; % max time, [s]
-    RTs = 50; % number of round trips to take
+    RTs = 10; % number of round trips to take
     sim.Zmax = Zmax; sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.RTs = RTs;
     
     % Mirrors
@@ -45,7 +45,8 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     zr = pi*w0^2/Ld; % Rayleigh range
     wz = w0*sqrt(1+(L/zr).^2); % spot size at mirror, analytic solution
     theta_D = Ld/D1; % diffraction angle
-    laser.zr = zr; laser.wz = wz; laser.theta_D = theta_D;
+    N_F = (D1/2)^2 / (L*Ld); % Fresnel number (>>1 means diffraction losses are small and higher order modes can be supported)
+    laser.zr = zr; laser.wz = wz; laser.theta_D = theta_D; laser.N_F = N_F;
     
     % Misalignment angles
     theta_x1 = 0.05*theta_D; % misalignment based on diffraction angle, [rad]
@@ -60,6 +61,8 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     [x, y, X, Y] = Create_Grid(N, Lx, dx);
     sim.x = x; sim.y = y; sim.X = X; sim.Y = Y;
     Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
+    Pseed = 1; % choose laser seed power, [W]
+    Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
     z = linspace(Z0,Zmax,Nz); % z locations to evaluate field
     z2 = linspace(Zmax,Z0,Nz); % other half, going other way
     RT = [z, z2]; % represents all positions being evaluated within one round-trip
@@ -74,9 +77,9 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     loss_frac = zeros(1, RTs); % pre-allocate, to be filled
-    loss1 = []; loss2 = []; R1 = []; R2 = []; 
+    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = [];
     laser.Gau_ini = Gau_ini; laser.Gau = Gau; outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac;
-    outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2;
+    outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain;
      
     % Mirror masks: reflecting lens phase screens and clipping masks
     rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
@@ -87,7 +90,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     
     % Settings 
     track_centers = true;
-    gain_switch = false; % gain ON or OFF
+    gain_switch = true; % gain ON or OFF
     toggles.track_centers = true;
     toggles.gain_switch = gain_switch;
 end
