@@ -16,16 +16,23 @@ x_rot = -frame.Omega/consts.c * (sim.z.^2 + 0.5*sim.L*sim.z);
 x_acc = (frame.v0/consts.c)*(sim.z - sim.Z0) + (frame.accel/(2*consts.c^2))*(sim.z - sim.Z0).^2;
 x_ana = x_rot + x_acc; % analytic solution from ray optics
 
-% Plotting
+% Plotting and saving figures
 %Plot_Results_vs_Analytic(centerx, x_ana, z)
-Plot_RT_Loss(outputs.loss_frac, sim.RTs)
-Plot_Center(outputs.centerx, sim.zs)
-Plot_R(outputs.R1, outputs.R2, sim.Nz, sim.zs)
-Plot_Mirror_Loss(outputs.loss1, outputs.loss2, sim.Nz, sim.zs)
+
+fig1 = Plot_RT_Loss(outputs.loss_frac, sim.RTs);
+savefig(fig1, fullfile(outputs.saveFolder,'RT_Loss.fig'));
+exportgraphics(fig1, fullfile(outputs.saveFolder,'RT_Loss.png'), 'Resolution',300);
+
+fig2 = Plot_Center(outputs.centerx, sim.zs);
+savefig(fig2, fullfile(outputs.saveFolder,'Center_vs_z.fig'));
+exportgraphics(fig2, fullfile(outputs.saveFolder,'Center_vs_z.png'), 'Resolution',300);
+
+fig3 = Plot_R(outputs.R1, outputs.R2, sim.Nz, sim.zs);
+savefig(fig3, fullfile(outputs.saveFolder,'Reflection.fig'));
+exportgraphics(fig3, fullfile(outputs.saveFolder,'Reflection.png'), 'Resolution',300);
+
+fig4 = Plot_Mirror_Loss(outputs.loss1, outputs.loss2, sim.Nz, sim.zs);
+savefig(fig4, fullfile(outputs.saveFolder,'Mirror_Loss.fig'));
+exportgraphics(fig4, fullfile(outputs.saveFolder,'Mirror_Loss.png'), 'Resolution',300);
 
 close(outputs.v);
-
-
-
-
-
