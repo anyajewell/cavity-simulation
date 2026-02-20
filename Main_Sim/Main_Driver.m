@@ -8,7 +8,16 @@ figure;
 [gain_medium] = Initialize_Gain_Medium(sim, mirror);
 
 %% Propagation
-[laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % propagate
+if laser.pos ~= mirror(1).loc && laser.pos ~= mirror(2).loc % wavefront is starting within the cavity
+    if sim.dz > 0
+        [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, 0);
+    else
+        [laser, outputs, sim, gain_medium] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, 0);
+    end
+    [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % now propagate # of desired RTs
+else % laser is starting at one end of the cavity
+    [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium);
+end
 
 %% Post-Processing
 

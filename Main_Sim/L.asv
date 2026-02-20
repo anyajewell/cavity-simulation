@@ -1,9 +1,9 @@
-function [laser, outputs, sim, gain_medium] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, a)
+function [laser, outputs, sim] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, a)
 
     while laser.pos > mirror(2).loc
-        frame.Omega = frame.Omega; % opportunity to read/update Omega from other code
-        frame.accel = frame.accel; % opportunity to read/update accel from other code
-        if laser.pos + sim.dz < mirror(2).loc % beam will step past mirror
+        frame.Omega = Omega; % opportunity to read/update Omega from other code
+        frame.accel = accel; % opportunity to read/update accel from other code
+        if laser.pos + sim.dz > mirror(2).loc % beam will step past mirror
             dz_step = mirror(2).loc - laser.pos; % calculate fractional step
             if dz_step == 0 % beam will step directly to mirror 2
                 if toggles.track_centers == true
@@ -11,7 +11,7 @@ function [laser, outputs, sim, gain_medium] = L(consts, sim, laser, frame, mirro
                     outputs.centery(end+1) = trapz(trapz(sim.Y.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center y
                 end
                 break
-            else % propagate by fractional step to mirror 2
+            else % propagate by fractional step to L
             [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, dz_step); % propagate fractional step to mirror
             laser.pos = laser.pos + dz_step; % update laser position
             end
@@ -31,7 +31,6 @@ function [laser, outputs, sim, gain_medium] = L(consts, sim, laser, frame, mirro
     laser.Gau = laser.Gau.*mirror(2).cmask.*mirror(2).rmask.*mirror(2).tmask; % clip and shape the beam
     RP_after = trapz(trapz(abs(laser.Gau).^2)); % power after mirror 2
     I_after = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % intensity after mirror 2
-    
     outputs.R2(end+1) = RP_after / RP_before; % reflected over incident power
     outputs.loss2(end+1) =  1 - RP_after / RP_before;
     outputs.Imax(end+1) = max(I_after,[],'all');

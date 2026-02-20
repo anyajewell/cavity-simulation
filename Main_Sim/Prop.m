@@ -34,14 +34,7 @@ function [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, dz
     end
 
     % Plot every step here
-    % imagesc(x,y,abs(Gau)); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]'); 
-    % set(gcf, 'Color', 'w'); set(gca, 'Color', 'w'); hold on; 
-    % if track_centers == true
-    %     plot(centerx(end),centery(end),'ro'); hold off;
-    % end
-    % 
-    % frame = getframe(gcf); display(z(i));
-    % writeVideo(v,frame);
+    % outputs = Write_Video_Frame(sim, laser, toggles, outputs);
 
 end
 

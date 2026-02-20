@@ -1,17 +1,17 @@
-function [laser, outputs, sim] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, a)        
+function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, a)        
     
     while laser.pos < mirror(1).loc
-        Omega = frame.Omega; % opportunity to read/update Omega from other code
-        accel = frame.accel; % opportunity to read/update accel from other code
+        frame.Omega = frame.Omega; % opportunity to read/update Omega from other code
+        frame.accel = frame.accel; % opportunity to read/update accel from other code
         if laser.pos + sim.dz > mirror(1).loc % beam will step past mirror
             dz_step = mirror(1).loc - laser.pos; % calculate fractional step
-            if dz_step == 0 % beam will step directly to mirror
+            if dz_step == 0 % beam will step directly to mirror 1
                 if toggles.track_centers == true
                     outputs.centerx(end+1) = trapz(trapz(sim.X.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center x
                     outputs.centery(end+1) = trapz(trapz(sim.Y.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center y
                 end
                 break
-            else % propagate by fractional step to L
+            else % propagate by fractional step to mirror 1
             [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, dz_step); % propagate fractional step to mirror
             laser.pos = laser.pos + dz_step; % update laser position
             end
@@ -46,6 +46,7 @@ function [laser, outputs, sim] = R(consts, sim, laser, frame, mirror, outputs, t
     
     RP_after = trapz(trapz(abs(laser.Gau).^2)); % power after mirror 1
     I_after = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % intensity after mirror 1
+    
     outputs.R1(end+1) = RP_after / RP_before; % reflected over incident power
     outputs.loss1(end+1) =  1 - RP_after / RP_before;
     outputs.Imax(end+1) = max(I_after,[],'all');

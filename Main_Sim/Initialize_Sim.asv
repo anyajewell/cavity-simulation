@@ -48,7 +48,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     wz = w0*sqrt(1+(L/zr).^2); % spot size at mirror, analytic solution
     theta_D = Ld/D1; % diffraction angle
     N_F = (D1/2)^2 / (L*Ld); % Fresnel number (>>1 means diffraction losses are small and higher order modes can be supported)
-    laser.zr = zr; laser.wz = wz; laser.theta_D = theta_D; laser.N_F = N_F;
+    laser.zr = zr; laser.wz = wz; laser.theta_D = theta_D; laser.N_F = N_F; laser.pos = Z0;
     
     % Misalignment angles
     theta_x1 = 0.05*theta_D; % misalignment based on diffraction angle, [rad]
@@ -66,34 +66,12 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     Pseed = 1; % choose laser seed power, [W]
     Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
     
-    % Set up zs
-    z_LR = linspace(mirror(2).loc, mirror(1).loc, Nz); % z locations to evaluate field from LHS to RHS
-    z_RL = linspace(mirror(1).loc, mirror(2).loc, Nz); % other half, going other way from RHS to LHS
-
-    % Determine how to structure 
-    if Z0 ~= mirror(1).loc && Z0 ~= mirror(2).loc % wavefront is not starting at either end of the cavity
-        if sign(dz) > 0 % laser traveling right
-            z1 = 
-        else % laser traveling left
-            z1 = 
-        end
-    else
-        if sign(dz) > 0 % laser traveling L --> R
-            z1 = z_LR;
-        else % laser traveling R --> L
-            z1 = z_RL;
-        end
-    end
-    
     RT = [z1, z2]; % represents all positions being evaluated within first trip
-    zs = [];
-
+    z = [];
     for i = 1:RTs
-        
-        zs(1) = z1;
-        zs = [zs, RT];
+        z = [z, RT]; % represent evaluatory positions within the cavity
     end
-    sim.z = z_LR; sim.zs = zs;
+    sim.z = z;
 
     t0 = 0;
     t = linspace(t0,tmax,Nz); % timesteps

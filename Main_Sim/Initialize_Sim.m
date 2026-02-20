@@ -23,16 +23,15 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     frame.Omega = Omega; frame.accel = accel; frame.v0 = v0;
     
     % Simulation settings
-    %Zmax = 75e3; % destination of z, [m] 
     Z0 = 0; % starting location, arbitrary, anywhere within the cavity [m]
     L = 150e3; % cavity length, [m]
     Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
     dz = L/Nz; % step size, sign determines initial direction [m]
     t0 = 0; t(1) = t0;
-    dt = dz/c; % time step, [s]
+    dt = abs(dz/c); % time step, [s]
     tmax = dt*Nz; % max time, [s]
     RTs = 50; % number of round trips to take
-    sim.Zmax = Zmax; sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.RTs = RTs;
+    sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.RTs = RTs;
     
     % Mirrors
     D1 = 1; % large size to reduce clipping, [m]
@@ -65,44 +64,15 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
     Pseed = 1; % choose laser seed power, [W]
     Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
-    
-    % Set up zs
-    z_LR = linspace(mirror(2).loc, mirror(1).loc, Nz); % z locations to evaluate field from LHS to RHS
-    z_RL = linspace(mirror(1).loc, mirror(2).loc, Nz); % other half, going other way from RHS to LHS
-
-    % Determine how to structure 
-    if Z0 ~= mirror(1).loc && Z0 ~= mirror(2).loc % wavefront is not starting at either end of the cavity
-        if sign(dz) > 0 % laser traveling right
-            z1 = 
-        else % laser traveling left
-            z1 = 
-        end
-    else
-        if sign(dz) > 0 % laser traveling L --> R
-            z1 = z_LR;
-        else % laser traveling R --> L
-            z1 = z_RL;
-        end
-    end
-    
-    RT = [z1, z2]; % represents all positions being evaluated within first trip
-    zs = []; zs(1) = z1;
-
-    for i = 1:RTs
-        zs = [zs, RT]; % represents ALL positions, in order, this wavefront will be evaluated at
-    end
-
-    sim.z = z_LR; sim.zs = zs;
-
     t0 = 0;
     t = linspace(t0,tmax,Nz); % timesteps
     Gau = Gau_ini;
     centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     loss_frac = zeros(1, RTs); % pre-allocate, to be filled
-    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; power = [];
+    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = [];
     laser.Gau_ini = Gau_ini; laser.Gau = Gau; outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac;
-    outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = power;
+    outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax;
      
     % Mirror masks: reflecting lens phase screens and clipping masks
     rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
