@@ -35,15 +35,15 @@ fig2 = Plot_Center(outputs.centerx, outputs.zs);
 savefig(fig2, fullfile(outputs.saveFolder,'Center_vs_z.fig'));
 exportgraphics(fig2, fullfile(outputs.saveFolder,'Center_vs_z.png'), 'Resolution',300);
 
-fig3 = Plot_R(outputs.R1, outputs.R2, sim.Nz, outputs.zs);
-savefig(fig3, fullfile(outputs.saveFolder,'Reflection.fig'));
-exportgraphics(fig3, fullfile(outputs.saveFolder,'Reflection.png'), 'Resolution',300);
+% fig3 = Plot_R(outputs.R1, outputs.R2, sim.Nz, outputs.zs);
+% savefig(fig3, fullfile(outputs.saveFolder,'Reflection.fig'));
+% exportgraphics(fig3, fullfile(outputs.saveFolder,'Reflection.png'), 'Resolution',300);
+% 
+% fig4 = Plot_Mirror_Loss(outputs.loss1, outputs.loss2, sim.Nz, outputs.zs);
+% savefig(fig4, fullfile(outputs.saveFolder,'Mirror_Loss.fig'));
+% exportgraphics(fig4, fullfile(outputs.saveFolder,'Mirror_Loss.png'), 'Resolution',300);
 
-fig4 = Plot_Mirror_Loss(outputs.loss1, outputs.loss2, sim.Nz, outputs.zs);
-savefig(fig4, fullfile(outputs.saveFolder,'Mirror_Loss.fig'));
-exportgraphics(fig4, fullfile(outputs.saveFolder,'Mirror_Loss.png'), 'Resolution',300);
-
-fig5 = Plot_Imax_vs_Isat(outputs, gain_medium.I_sat, sim.Nz, outputs.zs);
+fig5 = Plot_Imax_vs_Isat(outputs, gain_medium.I_sat, sim);
 savefig(fig5, fullfile(outputs.saveFolder,'Imax.fig'));
 exportgraphics(fig5, fullfile(outputs.saveFolder,'Imax.png'), 'Resolution',300);
 

@@ -1,7 +1,7 @@
-function fig = Plot_Imax_vs_Isat(outputs, I_sat, sim)
+function fig = Plot_Imax_vs_Isat(outputs, I_sat, zs)
     fig = figure;
-    s = [0, cumsum(abs(diff(outputs.zs)))];
-    [hit_idx, ~, ~] = Get_Mirror_Hit_Idx(outputs.zs, sim.L);  % indices where either mirror hit occurred
+    s = [0, cumsum(abs(diff(zs)))];
+    [hit_idx, ~, ~] = Get_Mirror_Hit_Idx(outzs, sim.L);  % indices where either mirror hit occurred
     s_hits = s(hit_idx);
     % Imax is logged per mirror hit (one entry per hit)
     n = min(numel(s_hits), numel(outputs.Imax));
