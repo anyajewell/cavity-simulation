@@ -70,9 +70,9 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     loss_frac = zeros(1, RTs); % pre-allocate, to be filled
-    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = [];
+    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = [];
     laser.Gau_ini = Gau_ini; laser.Gau = Gau; outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac;
-    outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax;
+    outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax; outputs.zs = zs;
      
     % Mirror masks: reflecting lens phase screens and clipping masks
     rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
