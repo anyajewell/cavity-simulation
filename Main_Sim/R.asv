@@ -34,7 +34,8 @@ function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirro
 
     RP_before = trapz(trapz(abs(laser.Gau).^2)); % power before mirror 1
     I_before = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % intensity before mirror 1
-    theta_x1 = mirror(1).dtheta_x; theta_y1 = mirror(1).dtheta_y; % query misalignment
+    theta_x1 = mirror(1).theta_x1; theta_x2 = mirror(1).theta_y1
+
     phi_tilt1 = 2*laser.k0*(theta_x1*sim.X + theta_y1*sim.Y);
     mirror(1).tmask = exp(1i*phi_tilt1); % tilt mask
     laser.Gau = laser.Gau.*mirror(1).cmask.*mirror(1).rmask.*mirror(1).tmask; % clip and shape the beam

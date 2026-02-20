@@ -7,6 +7,11 @@ figure;
 [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(); % initialize
 [gain_medium] = Initialize_Gain_Medium(sim, mirror);
 
+%% Run with PCAC
+
+dtheta_x = 0; dtheta_y = 0; sampling_time = 0.005;
+[loss_frac, laser, outputs, gain_medium] = Laser(dtheta_x, dtheta_y, sampling_time, consts, sim, laser, frame, mirror, outputs, toggles, gain_medium);
+
 %% Propagation
 if laser.pos ~= mirror(1).loc && laser.pos ~= mirror(2).loc % wavefront is starting within the cavity
     if sim.dz > 0
