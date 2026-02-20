@@ -23,9 +23,6 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
                 [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, i); % propagation loop
             end
         end
-
-        P_before = trapz(trapz(abs(laser.Gau).^2)); % power before mirror 1
-        I_before = sum(abs(laser.Gau).^2,'all'); % intensity before mirror 1
     
         % Interact with mirror 1 (RHS)
         if toggles.gain_switch == true % Gain medium present at mirror 1
@@ -37,6 +34,8 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
             outputs.gain(end+1) = P_after / P_before;
         end
 
+        RP_before = trapz(trapz(abs(laser.Gau).^2)); % power before mirror 1
+        I_before = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % intensity before mirror 1
         theta_x1 = 0; theta_y1 = 0; % query mirror misalignment
 
         if a == 30 % introduce one time misalignment
@@ -47,10 +46,11 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
         mirror(1).tmask = exp(1i*phi_tilt1); % tilt mask
         laser.Gau = laser.Gau.*mirror(1).cmask.*mirror(1).rmask.*mirror(1).tmask; % clip and shape the beam
         
-        P_after = trapz(trapz(abs(laser.Gau).^2)); % power after mirror 1
-        I_after = sum(abs(laser.Gau).^2,'all'); % intensity after mirror 1
-        outputs.R1(end+1) = P_after / P_before; % reflected over incident power
-        outputs.loss1(end+1) =  1 - I_after / I_before;
+        RP_after = trapz(trapz(abs(laser.Gau).^2)); % power after mirror 1
+        I_after = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % intensity after mirror 1
+        outputs.R1(end+1) = RP_after / RP_before; % reflected over incident power
+        outputs.loss1(end+1) =  1 - RP_after / RP_before;
+        outputs.Imax(end+1) = max(I_after,[],'all');
         
         [sim] = Turn_Around(sim);
 
@@ -84,16 +84,17 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
         end
     
         % Interact with mirror 2 (LHS)
-        P_before = trapz(trapz(abs(laser.Gau).^2)); % power before mirror 2
-        I_before = sum(abs(laser.Gau).^2,'all'); % intensity before mirror 2
+        RP_before = trapz(trapz(abs(laser.Gau).^2)); % power before mirror 2
+        I_before = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % intensity before mirror 2
         theta_x2 = 0; theta_y2 = 0; % query mirror misalignment
         phi_tilt2 = 2*laser.k0*(theta_x2*sim.X + theta_y2*sim.Y);
         mirror(2).tmask = exp(1i*phi_tilt2); % tilt mask
         laser.Gau = laser.Gau.*mirror(2).cmask.*mirror(2).rmask.*mirror(2).tmask; % clip and shape the beam
-        P_after = trapz(trapz(abs(laser.Gau).^2)); % power after mirror 2
-        I_after = sum(abs(laser.Gau).^2,'all'); % intensity after mirror 2
-        outputs.R2(end+1) = P_after / P_before; % reflected over incident power
-        outputs.loss2(end+1) =  1 - I_after / I_before;
+        RP_after = trapz(trapz(abs(laser.Gau).^2)); % power after mirror 2
+        I_after = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % intensity after mirror 2
+        outputs.R2(end+1) = RP_after / RP_before; % reflected over incident power
+        outputs.loss2(end+1) =  1 - RP_after / RP_before;
+        outputs.Imax(end+1) = max(I_after,[],'all');
 
         [sim] = Turn_Around(sim);
 
