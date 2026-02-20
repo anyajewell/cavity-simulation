@@ -1,12 +1,13 @@
+%% Initialization
+
 clear all;
 clc;
 figure;
 
-% Simulation
 [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(); % initialize
 [gain_medium] = Initialize_Gain_Medium(sim, mirror);
 
-%%
+%% Propagation
 [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % propagate
 
 %% Post-Processing
@@ -43,6 +44,6 @@ fig6 = Plot_RT_Gain(outputs.gain, sim.RTs);
 savefig(fig6, fullfile(outputs.saveFolder,'Gain.fig'));
 exportgraphics(fig6, fullfile(outputs.saveFolder,'Gain.png'), 'Resolution',300);
 
-Save_Workspace(consts, sim, laser, frame, mirror, outputs, gain_medium);
+Save_Workspace(consts, sim, laser, frame, mirror, outputs, gain_medium); % automatic save
 
 close(outputs.v);

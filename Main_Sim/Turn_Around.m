@@ -1,9 +1,11 @@
 function [sim] = Turn_Around(sim)
 
-    % Turn around
-    sim.Zmax = -sim.Zmax;
-    sim.Z0 = -sim.Zmax;
-    sim.dz = -sim.dz;
-    sim.z = linspace(sim.Z0,sim.Zmax,sim.Nz);
+    if pos == mirror(1).loc % laser at RHS of cavity
+        sim.dz = -sim.dz;
+        sim.z = linspace(mirror(1).loc,mirror(2).loc,sim.Nz);
+    else % laser at LHS of cavity
+        sim.dz = -sim.dz;
+        sim.z = linspace(mirror(2).loc,mirror(1).loc,sim.Nz);
+    end
 
 end
