@@ -1,4 +1,4 @@
-function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, a)        
+function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium)        
     
     while laser.pos < mirror(1).loc
         frame.Omega = frame.Omega; % opportunity to read/update Omega from other code

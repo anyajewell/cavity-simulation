@@ -34,7 +34,7 @@ function [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, dz
     end
 
     % Plot every step here
-    % outputs = Write_Video_Frame(sim, laser, toggles, outputs);
+    outputs = Write_Video_Frame(sim, laser, toggles, outputs);
 
 end
 

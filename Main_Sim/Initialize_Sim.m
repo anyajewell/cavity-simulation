@@ -18,7 +18,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     
     % Interlink frame settings
     Omega = 0.001; % rotational velocity, [rad/sec]
-    accel = 1e-5; % transverse acceleration, [m/s^2]
+    accel = 0; % transverse acceleration, [m/s^2]
     v0 = 0; % starting transverse velocity, [m/s]
     frame.Omega = Omega; frame.accel = accel; frame.v0 = v0;
     
@@ -31,7 +31,8 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     dt = abs(dz/c); % time step, [s]
     tmax = dt*Nz; % max time, [s]
     RTs = 50; % number of round trips to take
-    sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.RTs = RTs;
+    z = linspace(Z0, L, Nz); % evaluatory locations within cavity
+    sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.RTs = RTs; sim.z = z;
     
     % Mirrors
     D1 = 1; % large size to reduce clipping, [m]
@@ -40,7 +41,8 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     Rc2 = Rc1; % radius of curvature for mirror 2, [m]
     loc1 = L/2; % location of mirror 1, RHS of cavity [m]
     loc2 = -L/2; % location of mirror 2, LHS of cavity [m]
-    mirror(1).D = D1; mirror(2).D = D2; mirror(1).Rc = Rc1; mirror(2).Rc = Rc2; mirror(1).loc = loc1; mirror(2).loc = loc2;
+    dtheta_x = 0; dtheta_y = 0; % intial mirror misalignment, [rad]
+    mirror(1).D = D1; mirror(2).D = D2; mirror(1).Rc = Rc1; mirror(2).Rc = Rc2; mirror(1).loc = loc1; mirror(2).loc = loc2; mirror(1).dtheta_x = dtheta_x; mirror(1).dtheta_y = dtheta_y;
     
     % Calculations
     zr = pi*w0^2/Ld; % Rayleigh range
