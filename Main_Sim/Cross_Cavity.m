@@ -4,8 +4,6 @@
 
 function [laser, outputs, gain_medium] = Cross_Cavity(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium)
 
-    Gau_a = laser.Gau; % beam profile at the start
-
     if sim.dz > 0 % laser traveling L --> R
             [laser, outputs, sim] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling right first
             outputs = Write_Video_Frame(sim, laser, toggles, outputs);

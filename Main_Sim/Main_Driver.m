@@ -9,6 +9,7 @@ figure;
 
 %% Once across cavity
 
+outputs.z1 = []; outputs.z2 = [];
 [laser, outputs, gain_medium] = Cross_Cavity(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium);
 
 %% Run with PCAC flow
@@ -45,7 +46,7 @@ fig2 = Plot_Center(outputs.centerx, outputs.zs);
 savefig(fig2, fullfile(outputs.saveFolder,'Center_vs_z.fig'));
 exportgraphics(fig2, fullfile(outputs.saveFolder,'Center_vs_z.png'), 'Resolution',300);
 
-fig3 = Plot_R(outputs.R1, outputs.R2, outputs.zs, sim.L)
+fig3 = Plot_R(outputs.R1, outputs.R2, outputs.zs, sim.L);
 savefig(fig3, fullfile(outputs.saveFolder,'Reflection.fig'));
 exportgraphics(fig3, fullfile(outputs.saveFolder,'Reflection.png'), 'Resolution',300);
 
@@ -61,6 +62,5 @@ fig6 = Plot_RT_Gain(outputs.gain);
 savefig(fig6, fullfile(outputs.saveFolder,'Gain.fig'));
 exportgraphics(fig6, fullfile(outputs.saveFolder,'Gain.png'), 'Resolution',300);
 
-Save_Workspace(consts, sim, laser, frame, mirror, outputs, gain_medium); % automatic save
-
+Save_Workspace(consts, sim, laser, frame, mirror, outputs, gain_medium); % automatic save all structs and their variables
 close(outputs.v);

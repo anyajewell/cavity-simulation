@@ -18,14 +18,14 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     
     % Interlink frame settings
     Omega = 0.001; % rotational velocity, [rad/sec]
-    accel = 0; % transverse acceleration, [m/s^2]
+    accel = 1e-5; % transverse acceleration, [m/s^2]
     v0 = 0; % starting transverse velocity, [m/s]
     frame.Omega = Omega; frame.accel = accel; frame.v0 = v0;
     
     % Simulation settings
-    Z0 = 0; % starting location, arbitrary, anywhere within the cavity [m]
     L = 150e3; % cavity length, [m]
-    Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
+    Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
+    Nz = 1e3; % number of steps in one pass across the cavity (1/2 a round trip)
     dz = L/Nz; % step size, sign determines initial direction [m]
     t0 = 0; t(1) = t0;
     dt = abs(dz/c); % time step, [s]
