@@ -19,9 +19,6 @@ function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirro
             [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, sim.dz); % propagation loop
             laser.pos = laser.pos + sim.dz; % update laser position
         end
-        if toggles.outputs_switch == true
-            outputs.zs(end+1) = laser.pos;
-        end
     end
 
     % Interact with mirror 1 (RHS)

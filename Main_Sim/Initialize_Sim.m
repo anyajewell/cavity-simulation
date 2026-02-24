@@ -3,7 +3,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     % Settings 
     track_centers = true;
     gain_switch = false; % gain ON or OFF
-    outputs_switch = false;
+    outputs_switch = true;
     toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch;
 
     % Constants
@@ -30,14 +30,14 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     frame.Omega = Omega; frame.accel = accel; frame.v0 = v0;
     
     % Simulation settings
-    L = 150e3; % cavity length, [m]
+    L = 10e3; % cavity length, [m]
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
     Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
     dz = L/Nz; % step size, sign determines initial direction [m]
     t0 = 0; t(1) = t0;
     dt = abs(dz/c); % time step, [s]
     tmax = dt*Nz; % max time, [s]
-    RTs = 50; % number of round trips to take
+    RTs = 1; % number of round trips to take
     z = linspace(Z0, L, Nz); % evaluatory locations within cavity
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.RTs = RTs; sim.z = z;
     
@@ -76,7 +76,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     sim.x = x; sim.y = y; sim.X = X; sim.Y = Y;
     Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
     Pseed = 1; % choose laser seed power, [W]
-    Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
+    %Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
     t0 = 0;
     t = linspace(t0,tmax,Nz); % timesteps
     Gau = Gau_ini;

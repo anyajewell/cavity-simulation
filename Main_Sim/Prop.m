@@ -36,6 +36,7 @@ function [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, dz
     if toggles.outputs_switch == true
         % Plot every step here
         outputs = Write_Video_Frame(sim, laser, toggles, outputs);
+        outputs.zs(end+1) = laser.pos;
     end
 
 end
