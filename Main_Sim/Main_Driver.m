@@ -7,7 +7,7 @@ clc;
 [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(); % initialize
 [gain_medium] = Initialize_Gain_Medium(sim, mirror);
 
-% Run with PCAC flow
+%% Run with PCAC flow
 
 dtheta_x = 0; dtheta_y = 0; sampling_time = 0.005;
 [loss_frac, laser, outputs, gain_medium] = Laser(dtheta_x, dtheta_y, sampling_time, consts, sim, laser, frame, mirror, outputs, toggles, gain_medium);
