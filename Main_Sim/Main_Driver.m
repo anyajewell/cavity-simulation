@@ -2,17 +2,12 @@
 
 clear all;
 clc;
-figure;
+%figure;
 
 [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(); % initialize
 [gain_medium] = Initialize_Gain_Medium(sim, mirror);
 
-%% Once across cavity
-
-outputs.z1 = []; outputs.z2 = [];
-[laser, outputs, gain_medium] = Cross_Cavity(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium);
-
-%% Run with PCAC flow
+% Run with PCAC flow
 
 dtheta_x = 0; dtheta_y = 0; sampling_time = 0.005;
 [loss_frac, laser, outputs, gain_medium] = Laser(dtheta_x, dtheta_y, sampling_time, consts, sim, laser, frame, mirror, outputs, toggles, gain_medium);

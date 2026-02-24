@@ -6,7 +6,7 @@ function [laser, outputs, sim, gain_medium] = L(consts, sim, laser, frame, mirro
         if laser.pos + sim.dz < mirror(2).loc % beam will step past mirror
             dz_step = mirror(2).loc - laser.pos; % calculate fractional step
             if dz_step == 0 % beam will step directly to mirror 2
-                if toggles.track_centers == true
+                if toggles.track_centers == true && toggles.outputs_switch == true
                     outputs.centerx(end+1) = trapz(trapz(sim.X.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center x
                     outputs.centery(end+1) = trapz(trapz(sim.Y.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center y
                 end
@@ -19,7 +19,9 @@ function [laser, outputs, sim, gain_medium] = L(consts, sim, laser, frame, mirro
             [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, sim.dz); % propagation loop
             laser.pos = laser.pos + sim.dz; % update laser position
         end
-        outputs.zs(end+1) = laser.pos;
+        if toggles.outputs_switch == true
+            outputs.zs(end+1) = laser.pos;
+        end
     end
 
     % Interact with mirror 2 (LHS)
@@ -32,9 +34,11 @@ function [laser, outputs, sim, gain_medium] = L(consts, sim, laser, frame, mirro
     RP_after = trapz(trapz(abs(laser.Gau).^2)); % power after mirror 2
     I_after = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % intensity after mirror 2
     
-    outputs.R2(end+1) = RP_after / RP_before; % reflected over incident power
-    outputs.loss2(end+1) =  1 - RP_after / RP_before;
-    outputs.Imax(end+1) = max(I_after,[],'all');
+    if toggles.outputs_switch == true
+        outputs.R2(end+1) = RP_after / RP_before; % reflected over incident power
+        outputs.loss2(end+1) =  1 - RP_after / RP_before;
+        outputs.Imax(end+1) = max(I_after,[],'all');
+    end
 
     [sim] = Turn_Around(sim);
 

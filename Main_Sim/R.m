@@ -6,7 +6,7 @@ function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirro
         if laser.pos + sim.dz > mirror(1).loc % beam will step past mirror
             dz_step = mirror(1).loc - laser.pos; % calculate fractional step
             if dz_step == 0 % beam will step directly to mirror 1
-                if toggles.track_centers == true
+                if toggles.track_centers == true && toggles.outputs_switch == true
                     outputs.centerx(end+1) = trapz(trapz(sim.X.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center x
                     outputs.centery(end+1) = trapz(trapz(sim.Y.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center y
                 end
@@ -19,7 +19,9 @@ function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirro
             [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, sim.dz); % propagation loop
             laser.pos = laser.pos + sim.dz; % update laser position
         end
-        outputs.zs(end+1) = laser.pos;
+        if toggles.outputs_switch == true
+            outputs.zs(end+1) = laser.pos;
+        end
     end
 
     % Interact with mirror 1 (RHS)
@@ -29,7 +31,9 @@ function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirro
         gain_medium.g = gain_medium.g0_profile ./ (1 + I./gain_medium.I_sat); % gain function
         laser.Gau = laser.Gau.*exp(gain_medium.g/2); % rescale electric field
         P_after = sim.dx*sim.dx*sum(abs(laser.Gau).^2,'all');
-        outputs.gain(end+1) = P_after / P_before;
+        if toggles.outputs_switch == true
+            outputs.gain(end+1) = P_after / P_before;
+        end
     end
 
     RP_before = trapz(trapz(abs(laser.Gau).^2)); % power before mirror 1
@@ -42,10 +46,12 @@ function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirro
     RP_after = trapz(trapz(abs(laser.Gau).^2)); % power after mirror 1
     I_after = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % intensity after mirror 1
     
-    outputs.R1(end+1) = RP_after / RP_before; % reflected over incident power
-    outputs.loss1(end+1) =  1 - RP_after / RP_before;
-    outputs.Imax(end+1) = max(I_after,[],'all');
-    
+    if toggles.outputs_switch == true
+        outputs.R1(end+1) = RP_after / RP_before; % reflected over incident power
+        outputs.loss1(end+1) =  1 - RP_after / RP_before;
+        outputs.Imax(end+1) = max(I_after,[],'all');
+    end
+        
     [sim] = Turn_Around(sim);
 
 end

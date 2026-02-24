@@ -1,4 +1,11 @@
 function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim()
+    
+    % Settings 
+    track_centers = true;
+    gain_switch = false; % gain ON or OFF
+    outputs_switch = false;
+    toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch;
+
     % Constants
     c = 3e8; % [m/s]
     eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
@@ -25,7 +32,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     % Simulation settings
     L = 150e3; % cavity length, [m]
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
-    Nz = 1e3; % number of steps in one pass across the cavity (1/2 a round trip)
+    Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
     dz = L/Nz; % step size, sign determines initial direction [m]
     t0 = 0; t(1) = t0;
     dt = abs(dz/c); % time step, [s]
@@ -57,8 +64,12 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
 
     % Set up video
     videoname = sprintf('Omega=%.3f_accel=%.2e_L=%.0f_D=%.2f_RTs=%.0f.mp4', Omega, accel, L, D1, RTs);
-    [saveFolder, v] = Set_Up_Video(videoname);
-    outputs.saveFolder = saveFolder; outputs.v = v;
+    if toggles.outputs_switch == true
+        [saveFolder, v] = Set_Up_Video(videoname);
+        outputs.saveFolder = saveFolder; outputs.v = v;
+    else
+        outputs = struct();
+    end
     
     % Set up simulation
     [x, y, X, Y] = Create_Grid(N, Lx, dx);
@@ -73,8 +84,11 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     loss_frac = zeros(1, RTs); % pre-allocate, to be filled
     loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = [];
-    laser.Gau_ini = Gau_ini; laser.Gau = Gau; outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac;
-    outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax; outputs.zs = zs;
+    laser.Gau_ini = Gau_ini; laser.Gau = Gau; 
+    if toggles.outputs_switch == true
+        outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac;
+        outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax; outputs.zs = zs;
+    end
      
     % Mirror masks: reflecting lens phase screens and clipping masks
     rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
@@ -83,9 +97,4 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
     mirror(1).rmask = rmask1; mirror(2).rmask = rmask2; mirror(1).cmask = cmask1; mirror(2).cmask = cmask2;
     
-    % Settings 
-    track_centers = true;
-    gain_switch = false; % gain ON or OFF
-    toggles.track_centers = true;
-    toggles.gain_switch = gain_switch;
 end

@@ -28,16 +28,15 @@ function [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, dz
     %laser.Gau = interp1(xnew, laser.Gau.', sim.x, 'linear', 0).';
     laser.Gau = interp2(Xnew,sim.Y,laser.Gau,sim.X,sim.Y,'spline'); % interpolate onto the new grid
     
-    if toggles.track_centers == true
+    if toggles.track_centers == true && toggles.outputs_switch == true
         outputs.centerx(end+1) = trapz(trapz(sim.X.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center x
         outputs.centery(end+1) = trapz(trapz(sim.Y.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center y
     end
 
-    % Plot every step here
-    outputs = Write_Video_Frame(sim, laser, toggles, outputs);
-
-    outputs.z1(end+1) = z1;
-    outputs.z2(end+1) = z2;
+    if toggles.outputs_switch == true
+        % Plot every step here
+        outputs = Write_Video_Frame(sim, laser, toggles, outputs);
+    end
 
 end
 
