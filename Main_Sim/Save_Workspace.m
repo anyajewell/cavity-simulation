@@ -1,4 +1,4 @@
-function Save_Workspace(consts, sim, laser, frame, mirror, outputs, gain_medium)
+function Save_Workspace(consts, sim, laser, frame, mirror, outputs, gain_medium, toggles)
 
     % Ensure folder exists
     if ~exist(outputs.saveFolder, 'dir')
@@ -20,6 +20,7 @@ function Save_Workspace(consts, sim, laser, frame, mirror, outputs, gain_medium)
         'mirror', ...
         'outputs', ...
         'gain_medium', ...
+        'toggles', ...
         '-v7.3');   % v7.3 handles large arrays safely
 
     fprintf('Workspace saved to:\n%s\n', filename);

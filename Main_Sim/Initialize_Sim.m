@@ -3,7 +3,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     % Settings 
     track_centers = true;
     gain_switch = false; % gain ON or OFF
-    outputs_switch = false;
+    outputs_switch = true;
     toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch;
 
     % Constants
@@ -12,7 +12,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     consts.c = c; consts.eps0 = eps0;
     
     % Grid
-    Lx = 4; % Length of square transverse domain (one side), [m]
+    Lx = 8; % Length of square transverse domain (one side), [m]
     N = 511; % sampling number
     dx = Lx/N; % step size 
     sim.Lx = Lx; sim.N = N; sim.dx = dx;
