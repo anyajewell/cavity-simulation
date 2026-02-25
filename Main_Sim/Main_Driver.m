@@ -13,9 +13,10 @@ path = "C:\Users\jewellan\Documents\GitHub\cavity-simulation\Cavity_Modes"; file
 
 %% Propagation by # of RTs
 
-[consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(sampling_time); % initialize
+[consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(); % initialize
 [gain_medium] = Initialize_Gain_Medium(sim, mirror);
 
+%%
 if laser.pos ~= mirror(1).loc && laser.pos ~= mirror(2).loc % wavefront is starting within the cavity
     if sim.dz > 0
         [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, 0);
