@@ -2,7 +2,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, loss
 
     fullpath = fullfile(path, file);
     [consts, sim, laser, frame, mirror, outputs, gain_medium, toggles] = Load_Workspace(fullpath); % load pre-solved cavity mode solution
-    toggles.finish_line = 'convergence'; toggles.track_center = 0; toggles.outputs_switch = 1; % ensure no unnecessary outputs
+    toggles.finish_line = 'convergence'; toggles.track_center = 0; toggles.outputs_switch = 0; % ensure no unnecessary outputs
     loss_frac = Get_Latest_Loss_Fraction(fullpath);
 
 end
