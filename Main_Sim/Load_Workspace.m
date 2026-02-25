@@ -1,6 +1,4 @@
-function [consts, sim, laser, frame, mirror, outputs, gain_medium] = Load_Workspace(path, file)
-
-    fullpath = fullfile(path, file);
+function [consts, sim, laser, frame, mirror, outputs, gain_medium, toggles] = Load_Workspace(fullpath)
 
     data = load(fullpath);
 
@@ -21,6 +19,7 @@ function [consts, sim, laser, frame, mirror, outputs, gain_medium] = Load_Worksp
     mirror = data.mirror;
     outputs = data.outputs;
     gain_medium = data.gain_medium;
+    toggles = data.toggles;
 
     fprintf('Workspace successfully loaded from:\n%s\n', fullpath);
 

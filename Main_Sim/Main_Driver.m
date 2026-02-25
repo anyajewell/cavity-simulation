@@ -1,21 +1,21 @@
-%% Initialization
+%% Get Ready
 
 clear all;
 clc;
 %figure;
 
-[consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(); % initialize
-[gain_medium] = Initialize_Gain_Medium(sim, mirror);
-
-<<<<<<< HEAD
 %% Run with PCAC flow
 
-dtheta_x = 0; dtheta_y = 0; sampling_time = 0.5;
-[loss_frac, laser, outputs, gain_medium] = Laser(dtheta_x, dtheta_y, sampling_time, consts, sim, laser, frame, mirror, outputs, toggles, gain_medium);
+dtheta_x = 1e-7; dtheta_y = 0; sampling_time = 0.5;
+path = "C:\Users\jewellan\Documents\GitHub\cavity-simulation\Cavity_Modes"; file = "150km.mat";
+[consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, loss_frac] = Initialize_Laser_For_PCAC(path, file);
+[loss_frac, laser, outputs, gain_medium] = Laser(dtheta_x, dtheta_y, consts, sim, laser, frame, mirror, outputs, toggles, gain_medium);
 
-=======
->>>>>>> restructuring-cavity-logic
 %% Propagation by # of RTs
+
+[consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(sampling_time); % initialize
+[gain_medium] = Initialize_Gain_Medium(sim, mirror);
+
 if laser.pos ~= mirror(1).loc && laser.pos ~= mirror(2).loc % wavefront is starting within the cavity
     if sim.dz > 0
         [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, 0);
@@ -60,5 +60,5 @@ fig6 = Plot_RT_Gain(outputs.gain);
 savefig(fig6, fullfile(outputs.saveFolder,'Gain.fig'));
 exportgraphics(fig6, fullfile(outputs.saveFolder,'Gain.png'), 'Resolution',300);
 
-Save_Workspace(consts, sim, laser, frame, mirror, outputs, gain_medium); % automatic save all structs and their variables
+Save_Workspace(consts, sim, laser, frame, mirror, outputs, gain_medium, toggles); % automatic save all structs and their variables
 close(outputs.v);

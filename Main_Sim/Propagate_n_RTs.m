@@ -32,7 +32,7 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
         outputs.loss_frac(a) = loss_a;
 
         % Mode convergence check
-        if a >= 2 % only run once some loss data is available
+        if a >= 2 && strcmp(toggles.finish_line, 'convergence') % only run once some loss data is available
             [converged, state] = Check_Mode_Convergence(laser.Gau_a, laser.Gau, outputs.loss_frac(a-1), outputs.loss_frac(a), state);
             if converged == true
                 break % finish propagation early (time skip)

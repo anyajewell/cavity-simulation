@@ -2,16 +2,11 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     
     % Settings 
     track_centers = true;
-<<<<<<< HEAD
     gain_switch = false; % gain ON or OFF
     outputs_switch = true;
-    toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch;
-=======
-    gain_switch = true; % gain ON or OFF
-    outputs_switch = true;
     videoplot_frequency = 'every mirror'; % 'every step', 'every mirror', or 'never/none'
-    toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; toggles.videoplot_frequency = videoplot_frequency;
->>>>>>> restructuring-cavity-logic
+    finish_line = 'convergence'; % 'convergence' or 'RTs'
+    toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; toggles.videoplot_frequency = videoplot_frequency; toggles.finish_line = finish_line;
 
     % Constants
     c = 3e8; % [m/s]
@@ -19,7 +14,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     consts.c = c; consts.eps0 = eps0;
     
     % Grid
-    Lx = 8; % Length of square transverse domain (one side), [m]
+    Lx = 4; % Length of square transverse domain (one side), [m]
     N = 511; % sampling number
     dx = Lx/N; % step size 
     sim.Lx = Lx; sim.N = N; sim.dx = dx;
@@ -44,9 +39,11 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     t0 = 0; t(1) = t0;
     dt = abs(dz/c); % time step, [s]
     tmax = dt*Nz; % max time, [s]
-    RTs = 100; % number of round trips to take
     z = linspace(Z0, L, Nz); % evaluatory locations within cavity
-    sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.RTs = RTs; sim.z = z;
+    sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z;
+    RTs = 100; % number of round trips to take, user set
+    %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
+    sim.RTs = RTs;
     
     % Mirrors
     D1 = 1; % large size to reduce clipping, [m]
