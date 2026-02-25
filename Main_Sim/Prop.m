@@ -33,9 +33,13 @@ function [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, dz
         outputs.centery(end+1) = trapz(trapz(sim.Y.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center y
     end
 
-    if toggles.outputs_switch == true
+    if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every step')
         % Plot every step here
         outputs = Write_Video_Frame(sim, laser, toggles, outputs);
+    end
+
+    if toggles.outputs_switch == true
+        outputs.zs(end+1) = laser.pos;
     end
 
 end

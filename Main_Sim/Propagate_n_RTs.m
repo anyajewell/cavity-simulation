@@ -7,21 +7,21 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
 
         if sim.dz > 0 % laser traveling L --> R
             [laser, outputs, sim] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling right first
-            if toggles.outputs_switch == true
+            if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);
             end
             [laser, outputs, sim] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling left
-            if toggles.outputs_switch == true
+            if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);
             end
             
         else % laser traveling R --> L
             [laser, outputs, sim] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling left first
-            if toggles.outputs_switch == true
+            if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);
             end
             [laser, outputs, sim] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling right
-            if toggles.outputs_switch == true
+            if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);
             end
 
