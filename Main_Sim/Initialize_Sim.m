@@ -19,12 +19,6 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     dx = Lx/N; % step size 
     sim.Lx = Lx; sim.N = N; sim.dx = dx;
     
-    % Initial conditions
-    Ld = 1064*1e-9; % Laser wavelength, [m]
-    w0 = 5e-1; % initial beam width, [m]
-    k0 = (2*pi)/Ld; % wavenumber
-    laser.Ld = Ld; laser.w0 = w0; laser.k0 = k0;
-    
     % Interlink frame settings
     Omega = 0.001; % rotational velocity, [rad/sec]
     accel = 1e-5; % transverse acceleration, [m/s^2]
@@ -41,7 +35,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     tmax = dt*Nz; % max time, [s]
     z = linspace(Z0, L, Nz); % evaluatory locations within cavity
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z;
-    RTs = 100; % number of round trips to take, user set
+    RTs = 100; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
     
@@ -55,16 +49,15 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     dtheta_x = 0; dtheta_y = 0; % intial mirror misalignment, [rad]
     mirror(1).D = D1; mirror(2).D = D2; mirror(1).Rc = Rc1; mirror(2).Rc = Rc2; mirror(1).loc = loc1; mirror(2).loc = loc2; mirror(1).dtheta_x = dtheta_x; mirror(1).dtheta_y = dtheta_y;
     
-    % Calculations
+    % Initial laser conditions
+    Ld = 1064*1e-9; % Laser wavelength, [m]
+    w0 = 5e-1; % initial beam width, [m]
+    k0 = (2*pi)/Ld; % wavenumber
     zr = pi*w0^2/Ld; % Rayleigh range
     wz = w0*sqrt(1+(L/zr).^2); % spot size at mirror, analytic solution
     theta_D = Ld/D1; % diffraction angle
     N_F = (D1/2)^2 / (L*Ld); % Fresnel number (>>1 means diffraction losses are small and higher order modes can be supported)
-    laser.zr = zr; laser.wz = wz; laser.theta_D = theta_D; laser.N_F = N_F; laser.pos = Z0;
-    
-    % Misalignment angles
-    theta_x1 = 0.05*theta_D; % misalignment based on diffraction angle, [rad]
-    sim.theta_x1 = theta_x1;
+    laser.Ld = Ld; laser.w0 = w0; laser.k0 = k0; laser.zr = zr; laser.wz = wz; laser.theta_D = theta_D; laser.N_F = N_F; laser.pos = Z0;
 
     % Set up video
     videoname = sprintf('Omega=%.3f_accel=%.2e_L=%.0f_D=%.2f_RTs=%.0f.mp4', Omega, accel, L, D1, RTs);
