@@ -3,11 +3,12 @@
 clear all;
 clc;
 figure;
+set(groot,'defaultFigureColor','w')
 
 %% Run with PCAC flow
 
 dtheta_x = 0; dtheta_y = 0; sampling_time = 0.5;
-path = "C:\Users\jewellan\Documents\GitHub\cavity-simulation\Cavity_Modes"; file = "150km.mat";
+path = "C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Cavity_Modes"; file = "150km.mat";
 [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, loss_frac] = Initialize_Laser_For_PCAC(path, file);
 [loss_frac, laser, outputs, gain_medium] = Laser(dtheta_x, dtheta_y, consts, sim, laser, frame, mirror, outputs, toggles, gain_medium);
 

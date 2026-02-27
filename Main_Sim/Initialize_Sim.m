@@ -2,7 +2,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     
     % Settings 
     track_centers = true;
-    gain_switch = true; % gain ON or OFF
+    gain_switch = false; % gain ON or OFF
     outputs_switch = true;
     videoplot_frequency = 'every mirror'; % 'every step', 'every mirror', or 'never/none'
     finish_line = 'convergence'; % 'convergence' or 'RTs'
@@ -35,7 +35,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     tmax = dt*Nz; % max time, [s]
     z = linspace(Z0, L, Nz); % evaluatory locations within cavity
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z;
-    RTs = 100; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
+    RTs = 1000; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
     
@@ -72,7 +72,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     [x, y, X, Y] = Create_Grid(N, Lx, dx);
     sim.x = x; sim.y = y; sim.X = X; sim.Y = Y;
     Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
-    Pseed = 1; % choose laser seed power, [W]
+    %Pseed = 1; % choose laser seed power, [W]
     %Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
     t0 = 0;
     t = linspace(t0,tmax,Nz); % timesteps
@@ -88,8 +88,8 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     end
      
     % Mirror masks: reflecting lens phase screens and clipping masks
-    rmask1 = exp(1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS)
-    rmask2 = exp(1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS)
+    rmask1 = exp(-1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS), negative sign because propagation uses positive sign convention
+    rmask2 = exp(-1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS), negative sign because propagation uses positive sign convention
     cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
     cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
     mirror(1).rmask = rmask1; mirror(2).rmask = rmask2; mirror(1).cmask = cmask1; mirror(2).cmask = cmask2;
