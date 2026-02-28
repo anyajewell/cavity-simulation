@@ -15,7 +15,7 @@ if N_target > Nc
     error('Decrease_To_Grid0_Centroid: target grid larger than current.');
 end
 
-% Get latest centroid
+% Get latest centroid (physical units, same as sim.X/sim.Y)
 cx = outputs.centerx(end);
 cy = outputs.centery(end);
 
@@ -23,12 +23,14 @@ cy = outputs.centery(end);
 [~, ix0] = min(abs(sim.x - cx));
 [~, iy0] = min(abs(sim.y - cy));
 
+% Build crop indices of length N_target, parity-safe
 halfL = floor((N_target-1)/2);
 halfR = N_target - halfL - 1;
 
 ix = (ix0 - halfL) : (ix0 + halfR);
 iy = (iy0 - halfL) : (iy0 + halfR);
 
+% Clamp to bounds (so we always return exactly N_target points)
 if ix(1) < 1
     ix = ix + (1 - ix(1));
 end
