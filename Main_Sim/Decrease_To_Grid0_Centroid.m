@@ -1,0 +1,77 @@
+function [sim, laser, mirror] = Decrease_To_Grid0_Centroid(sim, laser, mirror, outputs)
+
+if ~isfield(sim,'grid0')
+    error('Decrease_To_Grid0_Centroid: sim.grid0 not found. Save it during initialization.');
+end
+
+N_target = sim.grid0.N;
+
+% Current field size
+[Nc, Ny] = size(laser.Gau);
+if Nc ~= Ny
+    error('Decrease_To_Grid0_Centroid: laser.Gau must be square.');
+end
+if N_target > Nc
+    error('Decrease_To_Grid0_Centroid: target grid larger than current.');
+end
+
+% Get latest centroid (physical units, same as sim.X/sim.Y)
+cx = outputs.centerx(end);
+cy = outputs.centery(end);
+
+% Convert centroid position to nearest index on CURRENT (big) grid
+[~, ix0] = min(abs(sim.x - cx));
+[~, iy0] = min(abs(sim.y - cy));
+
+% Build crop indices of length N_target, parity-safe
+halfL = floor((N_target-1)/2);
+halfR = N_target - halfL - 1;
+
+ix = (ix0 - halfL) : (ix0 + halfR);
+iy = (iy0 - halfL) : (iy0 + halfR);
+
+% Clamp to bounds (so we always return exactly N_target points)
+if ix(1) < 1
+    ix = ix + (1 - ix(1));
+end
+if iy(1) < 1
+    iy = iy + (1 - iy(1));
+end
+if ix(end) > Nc
+    ix = ix - (ix(end) - Nc);
+end
+if iy(end) > Nc
+    iy = iy - (iy(end) - Nc);
+end
+
+% Final sanity
+if numel(ix) ~= N_target || numel(iy) ~= N_target
+    error('Decrease_To_Grid0_Centroid: crop indexing failed (unexpected).');
+end
+
+% Crop evolved field around centroid
+laser.Gau = laser.Gau(iy, ix);
+
+% Restore original grid spec (dx and coordinate vectors)
+sim.N  = sim.grid0.N;
+sim.dx = sim.grid0.dx;
+sim.Lx = sim.grid0.Lx;
+sim.x  = sim.grid0.x;
+sim.y  = sim.grid0.y;
+[sim.X, sim.Y] = meshgrid(sim.x, sim.y);
+
+% Rebuild absorber on small grid (optional)
+r = sqrt(sim.X.^2 + sim.Y.^2);
+r0 = 0.8*(sim.Lx/2);
+w = 0.1*(sim.Lx/2);
+sim.mask_abs = ones(size(r));
+ii = r > r0;
+sim.mask_abs(ii) = exp(-((r(ii)-r0)/w).^8);
+
+% Rebuild mirror masks
+mirror(1).rmask = exp(-1i*laser.k0*(sim.X.^2+sim.Y.^2)/mirror(1).Rc);
+mirror(2).rmask = exp(-1i*laser.k0*(sim.X.^2+sim.Y.^2)/mirror(2).Rc);
+mirror(1).cmask = (sim.X.^2 + sim.Y.^2 <= (mirror(1).D/2)^2);
+mirror(2).cmask = (sim.X.^2 + sim.Y.^2 <= (mirror(2).D/2)^2);
+
+end

@@ -7,8 +7,10 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     videoplot_frequency = 'every mirror'; % 'every step', 'every mirror', or 'never/none'
     finish_line = 'convergence'; % 'convergence' or 'RTs'
     absorbing_mask = true;
+    resize_grid = true;
     toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; 
     toggles.videoplot_frequency = videoplot_frequency; toggles.finish_line = finish_line; toggles.absorbing_mask = absorbing_mask;
+    toggles.resize_grid = resize_grid;
 
     % Constants
     c = 3e8; % [m/s]
@@ -17,7 +19,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     
     % Grid
     Lx = 4; % Length of square transverse domain (one side), [m]
-    N = 511; % sampling number
+    N = 512; % sampling number
     dx = Lx/N; % step size 
     sim.Lx = Lx; sim.N = N; sim.dx = dx;
     
@@ -107,4 +109,13 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
         sim.mask_abs(idx) = exp(-((r(idx)-r0)/w).^8); % steep super-Gaussian
     end
         
+    if toggles.resize_grid == true
+        sim.grid0.N  = sim.N;
+        sim.grid0.dx = sim.dx;
+        sim.grid0.Lx = sim.Lx;
+        sim.grid0.x  = sim.x;
+        sim.grid0.y  = sim.y;
+        [sim, laser, mirror] = Increase_Domain_Size(sim, laser, mirror, 1024); % for the first pass only
+    end
+
 end
