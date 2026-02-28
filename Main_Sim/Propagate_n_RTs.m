@@ -10,7 +10,7 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
             [laser, outputs, sim] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling right first
             Gau_RHS = laser.Gau; % profile at mirror 1
             if a == 1
-                [sim, laser, mirror] = Decrease_To_Grid0_Centroid(sim, laser, mirror, outputs);
+                [sim, laser, mirror, gain_medium] = Decrease_To_Grid0_Centroid(sim, laser, mirror, outputs, toggles);
             end
             if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);
@@ -25,7 +25,7 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
             [laser, outputs, sim] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling left first
             Gau_LHS = laser.Gau; % profile at mirror 2
             if a == 1
-                [sim, laser] = Decrease_Domain_Size(sim, laser);
+                [sim, laser, mirror, gain_medium] = Decrease_To_Grid0_Centroid(sim, laser, mirror, outputs, toggles);
             end
             if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);

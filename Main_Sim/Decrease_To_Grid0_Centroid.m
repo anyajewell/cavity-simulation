@@ -1,4 +1,4 @@
-function [sim, laser, mirror] = Decrease_To_Grid0_Centroid(sim, laser, mirror, outputs)
+function [sim, laser, mirror, gain_medium] = Decrease_To_Grid0_Centroid(sim, laser, mirror, outputs, toggles)
 
 if ~isfield(sim,'grid0')
     error('Decrease_To_Grid0_Centroid: sim.grid0 not found. Save it during initialization.');
@@ -71,5 +71,10 @@ mirror(1).rmask = exp(-1i*laser.k0*(sim.X.^2+sim.Y.^2)/mirror(1).Rc);
 mirror(2).rmask = exp(-1i*laser.k0*(sim.X.^2+sim.Y.^2)/mirror(2).Rc);
 mirror(1).cmask = (sim.X.^2 + sim.Y.^2 <= (mirror(1).D/2)^2);
 mirror(2).cmask = (sim.X.^2 + sim.Y.^2 <= (mirror(2).D/2)^2);
+
+% Resize gain medium
+if toggles.gain_switch == true
+    gain_medium = Initialize_Gain_Medium(sim, mirror);
+end
 
 end

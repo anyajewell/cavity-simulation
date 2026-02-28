@@ -1,4 +1,4 @@
-function [sim, laser, mirror] = Increase_Domain_Size(sim, laser, mirror, N_new)
+function [sim, laser, mirror, gain_medium] = Increase_Domain_Size(sim, laser, mirror, toggles, N_new)
 
 % Increase the domain size for the first pass to mitigate boundary
 % reflections.
@@ -39,5 +39,9 @@ mirror(1).rmask = exp(-1i*laser.k0*(sim.X.^2+sim.Y.^2)/mirror(1).Rc);
 mirror(2).rmask = exp(-1i*laser.k0*(sim.X.^2+sim.Y.^2)/mirror(2).Rc);
 mirror(1).cmask = (sim.X.^2 + sim.Y.^2 <= (mirror(1).D/2)^2);
 mirror(2).cmask = (sim.X.^2 + sim.Y.^2 <= (mirror(2).D/2)^2);
+
+if toggles.gain_switch == true % resize gain medium to match
+    gain_medium = Initialize_Gain_Medium(sim, mirror);
+end
 
 end

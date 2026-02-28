@@ -1,8 +1,8 @@
-function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim()
+function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim()
     
     % Settings 
     track_centers = true;
-    gain_switch = false; % gain ON or OFF
+    gain_switch = true; % gain ON or OFF
     outputs_switch = true;
     videoplot_frequency = 'every mirror'; % 'every step', 'every mirror', or 'never/none'
     finish_line = 'convergence'; % 'convergence' or 'RTs'
@@ -19,7 +19,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     
     % Grid
     Lx = 4; % Length of square transverse domain (one side), [m]
-    N = 511; % sampling number
+    N = 512; % sampling number
     dx = Lx/N; % step size 
     sim.Lx = Lx; sim.N = N; sim.dx = dx;
     
@@ -108,11 +108,22 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
         idx = r > r0;
         sim.mask_abs(idx) = exp(-((r(idx)-r0)/w).^8); % steep super-Gaussian
     end
+
+    if toggles.gain_switch == true
+        gain_medium = Initialize_Gain_Medium(sim, mirror);
+    else
+        gain_medium = 
+   
+    end
         
     if toggles.resize_grid == true
-        original_sim = sim;
-        original_laser = laser;
-        original_mirror = mirror;
+        sim.grid0.N  = sim.N;
+        sim.grid0.dx = sim.dx;
+        sim.grid0.Lx = sim.Lx;
+        sim.grid0.x  = sim.x;
+        sim.grid0.y  = sim.y;
+        gain_medium.
+        [sim, laser, mirror] = Increase_Domain_Size(sim, laser, mirror, 1024); % for the first pass only
     end
 
 end

@@ -1,11 +1,11 @@
-function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim()
+function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim()
     
     % Settings 
     track_centers = true;
-    gain_switch = false; % gain ON or OFF
+    gain_switch = true; % gain ON or OFF
     outputs_switch = true;
     videoplot_frequency = 'every mirror'; % 'every step', 'every mirror', or 'never/none'
-    finish_line = 'convergence'; % 'convergence' or 'RTs'
+    finish_line = 'RTs'; % 'convergence' or 'RTs'
     absorbing_mask = true;
     resize_grid = true;
     toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; 
@@ -39,7 +39,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     tmax = dt*Nz; % max time, [s]
     z = linspace(Z0, L, Nz); % evaluatory locations within cavity
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z;
-    RTs = 1000; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
+    RTs = 3; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
     
@@ -108,14 +108,20 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
         idx = r > r0;
         sim.mask_abs(idx) = exp(-((r(idx)-r0)/w).^8); % steep super-Gaussian
     end
+
+    if toggles.gain_switch == true
+        gain_medium = Initialize_Gain_Medium(sim, mirror);
+    else
+        gain_medium = struct();   
+    end
         
     if toggles.resize_grid == true
-        sim.grid0.N  = sim.N;
+        sim.grid0.N = sim.N;
         sim.grid0.dx = sim.dx;
         sim.grid0.Lx = sim.Lx;
-        sim.grid0.x  = sim.x;
-        sim.grid0.y  = sim.y;
-        [sim, laser, mirror] = Increase_Domain_Size(sim, laser, mirror, 1024); % for the first pass only
+        sim.grid0.x = sim.x;
+        sim.grid0.y = sim.y;
+        [sim, laser, mirror, gain_medium] = Increase_Domain_Size(sim, laser, mirror, toggles, 1024); % for the first pass only
     end
 
 end
