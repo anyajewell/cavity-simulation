@@ -5,7 +5,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     gain_switch = false; % gain ON or OFF
     outputs_switch = true;
     videoplot_frequency = 'every mirror'; % 'every step', 'every mirror', or 'never/none'
-    finish_line = 'RTs'; % 'convergence' or 'RTs'
+    finish_line = 'convergence'; % 'convergence' or 'RTs'
     toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; toggles.videoplot_frequency = videoplot_frequency; toggles.finish_line = finish_line;
 
     % Constants
@@ -35,7 +35,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     tmax = dt*Nz; % max time, [s]
     z = linspace(Z0, L, Nz); % evaluatory locations within cavity
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z;
-    RTs = 6; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
+    RTs = 1000; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
     
@@ -72,7 +72,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     [x, y, X, Y] = Create_Grid(N, Lx, dx);
     sim.x = x; sim.y = y; sim.X = X; sim.Y = Y;
     Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
-    P_ref = []; % to store reference power for round-trip loss calculation at RHS
+    P_ref = []; % to store reference power
     %Pseed = 1; % choose laser seed power, [W]
     %Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
     t0 = 0;
@@ -82,7 +82,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     loss_frac = zeros(1, RTs); % pre-allocate, to be filled
     loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = [];
-    laser.Gau_ini = Gau_ini; laser.Gau = Gau; laser.P_ref = P_ref;
+    laser.Gau_ini = Gau_ini; laser.Gau = Gau; laser.P_ref = Gau_a;
     if toggles.outputs_switch == true
         outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac;
         outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax; outputs.zs = zs;

@@ -21,18 +21,6 @@ function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirro
         end
     end
 
-    % Interact with mirror 1 (RHS)
-    if toggles.gain_switch == true % Gain medium present at mirror 1
-        P_before = sim.dx*sim.dx*sum(abs(laser.Gau).^2,'all');
-        I = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % laser intensity profile
-        gain_medium.g = gain_medium.g0_profile ./ (1 + I./gain_medium.I_sat); % gain function
-        laser.Gau = laser.Gau.*exp(gain_medium.g/2); % rescale electric field
-        P_after = sim.dx*sim.dx*sum(abs(laser.Gau).^2,'all');
-        if toggles.outputs_switch == true
-            outputs.gain(end+1) = P_after / P_before;
-        end
-    end
-
     RP_before = trapz(trapz(abs(laser.Gau).^2)); % power before mirror 1
     I_before = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % intensity before mirror 1
     theta_x1 = mirror(1).dtheta_x; theta_y1 = mirror(1).dtheta_y; % query misalignment
@@ -47,6 +35,20 @@ function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirro
         outputs.R1(end+1) = RP_after / RP_before; % reflected over incident power
         outputs.loss1(end+1) =  1 - RP_after / RP_before;
         outputs.Imax(end+1) = max(I_after,[],'all');
+    end
+
+    laser.P_ref(end+1) = sim.dx^2 * sum(abs(laser.Gau).^2,'all'); % reference power for RT loss calculation 
+
+    % Apply gain
+    if toggles.gain_switch == true % Gain medium present at mirror 1
+        P_before = sim.dx*sim.dx*sum(abs(laser.Gau).^2,'all');
+        I = 0.5*consts.c*consts.eps0*abs(laser.Gau).^2; % laser intensity profile
+        gain_medium.g = gain_medium.g0_profile ./ (1 + I./gain_medium.I_sat); % gain function
+        laser.Gau = laser.Gau.*exp(gain_medium.g/2); % rescale electric field
+        P_after = sim.dx*sim.dx*sum(abs(laser.Gau).^2,'all');
+        if toggles.outputs_switch == true
+            outputs.gain(end+1) = P_after / P_before;
+        end
     end
         
     [sim] = Turn_Around(sim);
