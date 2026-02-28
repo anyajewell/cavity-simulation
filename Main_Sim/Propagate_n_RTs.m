@@ -3,11 +3,19 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
     state = []; % initialize for convergence checks
 
     for a = 1:sim.RTs
+
+        if a == 1
+            [sim, laser] = Increase_Domain_Size(sim, laser, 1024, mirror);
+        end
+
         laser.Gau_a = laser.Gau; % beam profile at the start of this round trip (RT)
 
         if sim.dz > 0 % laser traveling L --> R
             [laser, outputs, sim] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling right first
             Gau_RHS = laser.Gau; % profile at mirror 1
+            if a == 1
+                [sim, laser] = Decrease_Domain_Size(sim, laser);
+            end
             if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);
             end
@@ -20,6 +28,9 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
         else % laser traveling R --> L
             [laser, outputs, sim] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling left first
             Gau_LHS = laser.Gau; % profile at mirror 2
+            if a == 1
+                [sim, laser] = Decrease_Domain_Size(sim, laser);
+            end
             if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);
             end

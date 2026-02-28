@@ -27,6 +27,10 @@ function [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, dz
     % Implementation of shift interpolation
     %laser.Gau = interp1(xnew, laser.Gau.', sim.x, 'linear', 0).';
     laser.Gau = interp2(Xnew,sim.Y,laser.Gau,sim.X,sim.Y,'spline'); % interpolate onto the new grid
+
+    if toggles.absorbing_mask == true
+        laser.Gau = laser.Gau.*sim.mask_abs;
+    end
     
     if toggles.track_centers == true && toggles.outputs_switch == true
         outputs.centerx(end+1) = trapz(trapz(sim.X.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center x

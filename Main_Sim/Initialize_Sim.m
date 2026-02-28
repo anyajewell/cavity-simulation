@@ -5,8 +5,10 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     gain_switch = false; % gain ON or OFF
     outputs_switch = true;
     videoplot_frequency = 'every mirror'; % 'every step', 'every mirror', or 'never/none'
-    finish_line = 'RTs'; % 'convergence' or 'RTs'
-    toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; toggles.videoplot_frequency = videoplot_frequency; toggles.finish_line = finish_line;
+    finish_line = 'convergence'; % 'convergence' or 'RTs'
+    absorbing_mask = true;
+    toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; 
+    toggles.videoplot_frequency = videoplot_frequency; toggles.finish_line = finish_line; toggles.absorbing_mask = absorbing_mask;
 
     % Constants
     c = 3e8; % [m/s]
@@ -35,7 +37,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     tmax = dt*Nz; % max time, [s]
     z = linspace(Z0, L, Nz); % evaluatory locations within cavity
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z;
-    RTs = 6; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
+    RTs = 1000; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
     
@@ -94,5 +96,15 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
     cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
     mirror(1).rmask = rmask1; mirror(2).rmask = rmask2; mirror(1).cmask = cmask1; mirror(2).cmask = cmask2;
-    
+
+    % Domain masks: absorbing mask
+    if toggles.absorbing_mask == true
+        r = sqrt(sim.X.^2 + sim.Y.^2);
+        r0 = 0.8*(sim.Lx/2); % damping starts at 80% radius
+        w = 0.1*(sim.Lx/2); % damping width
+        sim.mask_abs = ones(size(r));
+        idx = r > r0;
+        sim.mask_abs(idx) = exp(-((r(idx)-r0)/w).^8); % steep super-Gaussian
+    end
+        
 end
