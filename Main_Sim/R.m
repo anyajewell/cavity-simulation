@@ -50,10 +50,10 @@ function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirro
         end
     end
 
-    if toggles.track_centers == true && toggles.outputs_switch == true
-        outputs.centerx(end+1) = trapz(trapz(sim.X.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center x
-        outputs.centery(end+1) = trapz(trapz(sim.Y.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center y
-    end    
+    % if toggles.track_centers == true && toggles.outputs_switch == true
+    %     outputs.centerx(end+1) = trapz(trapz(sim.X.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center x
+    %     outputs.centery(end+1) = trapz(trapz(sim.Y.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center y
+    % end    
         
     [sim] = Turn_Around(sim);
 

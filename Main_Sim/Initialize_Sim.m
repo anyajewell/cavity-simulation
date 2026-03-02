@@ -4,8 +4,8 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     track_centers = true;
     gain_switch = true; % gain ON or OFF
     outputs_switch = true;
-    videoplot_frequency = 'every step'; % 'every step', 'every mirror', or 'never/none'
-    finish_line = 'RTs'; % 'convergence' or 'RTs'
+    videoplot_frequency = 'every mirror'; % 'every step', 'every mirror', or 'never/none'
+    finish_line = 'convergence'; % 'convergence' or 'RTs'
     absorbing_mask = true;
     resize_grid = true;
     toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; 
@@ -24,8 +24,8 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     sim.Lx = Lx; sim.N = N; sim.dx = dx;
     
     % Interlink frame settings
-    Omega = 0; % rotational velocity, [rad/sec]
-    accel = 0; % transverse acceleration, [m/s^2]
+    Omega = 0.001; % rotational velocity, [rad/sec]
+    accel = 1e-5; % transverse acceleration, [m/s^2]
     v0 = 0; % starting transverse velocity, [m/s]
     frame.Omega = Omega; frame.accel = accel; frame.v0 = v0;
     
@@ -39,7 +39,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     tmax = dt*Nz; % max time, [s]
     z = linspace(Z0, L, Nz); % evaluatory locations within cavity
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z;
-    RTs = 1; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
+    RTs = 1000; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
     
