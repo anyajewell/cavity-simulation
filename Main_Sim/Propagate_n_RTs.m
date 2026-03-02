@@ -9,8 +9,18 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
         if sim.dz > 0 % laser traveling L --> R
             [laser, outputs, sim] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling right first
             Gau_RHS = laser.Gau; % profile at mirror 1
-            if a == 1
+            if a == 1 && toggles.resize_grid == true
                 [sim, laser, mirror, gain_medium] = Decrease_To_Grid0_Centroid(sim, laser, mirror, outputs, toggles);
+                if toggles.track_centers && toggles.outputs_switch
+                    I = abs(laser.Gau).^2;
+                    den = sum(I,'all');
+                    cx = sum(sim.X.*I,'all') / den;
+                    cy = sum(sim.Y.*I,'all') / den;
+                
+                    % Overwrite the last entry
+                    outputs.centerx(end) = cx;
+                    outputs.centery(end) = cy;
+                end
             end
             if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);
@@ -24,8 +34,18 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
         else % laser traveling R --> L
             [laser, outputs, sim] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling left first
             Gau_LHS = laser.Gau; % profile at mirror 2
-            if a == 1
+            if a == 1 && toggles.resize_grid == true
                 [sim, laser, mirror, gain_medium] = Decrease_To_Grid0_Centroid(sim, laser, mirror, outputs, toggles);
+                if toggles.track_centers && toggles.outputs_switch
+                    I = abs(laser.Gau).^2;
+                    den = sum(I,'all');
+                    cx = sum(sim.X.*I,'all') / den;
+                    cy = sum(sim.Y.*I,'all') / den;
+                
+                    % Overwrite the last entry
+                    outputs.centerx(end) = cx;
+                    outputs.centery(end) = cy;
+                end
             end
             if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);
