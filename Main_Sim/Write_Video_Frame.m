@@ -1,6 +1,9 @@
 function outputs = Write_Video_Frame(sim, laser, toggles, outputs)
     % Visualization
-    imagesc(sim.x,sim.y,abs(laser.Gau).^2); axis([-0.5 0.5 -0.5 0.5]); axis square; xlabel('x [m]'); ylabel('y [m]'); hold on; 
+    imagesc(sim.x,sim.y,abs(laser.Gau).^2); 
+    %axis([-0.5 0.5 -0.5 0.5]); 
+    axis square; xlabel('x [m]'); ylabel('y [m]'); hold on; 
+    clim([0 laser.I0]);
     if toggles.track_centers == true
         plot(outputs.centerx(end),outputs.centery(end),'ro'); hold off;
     end

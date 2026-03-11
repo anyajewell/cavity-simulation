@@ -42,6 +42,8 @@ mirror(2).cmask = (sim.X.^2 + sim.Y.^2 <= (mirror(2).D/2)^2);
 
 if toggles.gain_switch == true % resize gain medium to match
     gain_medium = Initialize_Gain_Medium(sim, mirror);
+else
+    gain_medium = [];
 end
 
 end

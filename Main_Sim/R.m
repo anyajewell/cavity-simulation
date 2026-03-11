@@ -36,6 +36,9 @@ function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirro
         outputs.R1(end+1) = RP_after / RP_before; % reflected over incident power
         outputs.loss1(end+1) =  1 - RP_after / RP_before;
         outputs.Imax(end+1) = max(I_after,[],'all');
+        I = abs(laser.Gau).^2;
+        outputs.P(end+1) = sum(I,'all')*sim.dx^2;
+        outputs.w(end+1) = sqrt(2*sum(((sim.X.^2+sim.Y.^2).*I),'all')/sum(I,'all'));
     end
 
     % Apply gain
