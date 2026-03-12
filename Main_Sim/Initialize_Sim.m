@@ -39,12 +39,12 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     tmax = dt*Nz; % max time, [s]
     z = linspace(Z0, L, Nz); % evaluatory locations within cavity
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z;
-    RTs = 10; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
+    RTs = 100; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
     
     % Mirrors
-    D1 = 1; % large size to reduce clipping, [m]
+    D1 = 5; % large size to reduce clipping, [m]
     D2 = D1; % diameter of mirror 2, [m]
     Rc1 = L; % radius of curvature for mirror 1, [m]
     Rc2 = Rc1; % radius of curvature for mirror 2, [m]
@@ -94,8 +94,8 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     end
      
     % Mirror masks: reflecting lens phase screens and clipping masks
-    rmask1 = exp(-1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS), negative sign because propagation uses positive sign convention
-    rmask2 = exp(-1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS), negative sign because propagation uses positive sign convention
+    rmask1 = exp(-1i*k0*(X.^2+Y.^2)/(2*Rc1)); % reflection mask mirror 1 (RHS), negative sign because propagation uses positive sign convention
+    rmask2 = exp(-1i*k0*(X.^2+Y.^2)/(2*Rc2)); % reflection mask mirror 2 (LHS), negative sign because propagation uses positive sign convention
     cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
     cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
     mirror(1).rmask = rmask1; mirror(2).rmask = rmask2; mirror(1).cmask = cmask1; mirror(2).cmask = cmask2;

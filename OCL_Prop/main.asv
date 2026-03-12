@@ -8,7 +8,7 @@ consts.eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
 
 % Adjustable parameters
 L = 100000; % length of cavity, [m]
-D1 = 2; % large size to reduce clipping, [m]
+D1 = 0.5; % large size to reduce clipping, [m]
 D2 = D1; % diameter of mirror 2, [m]
 Rc1 = L; % radius of curvature for mirror 1, [m]
 Rc2 = Rc1; % radius of curvature for mirror 2, [m]
@@ -34,7 +34,7 @@ theta = linspace(0,2*pi,400);
 x_circ1 = r1*cos(theta); y_circ1 = r1*sin(theta); x_circ2 = r2*cos(theta); y_circ2 = r2*sin(theta);
 
 % Input beam
-w0 = 0.1; % input beam waist, [m]
+w0 = 0.01; % input beam waist, [m]
 zr = pi*w0^2/lambda; % Rayleigh range
 wz = w0*sqrt(1+(L/zr).^2); % spot size, analytic solution
 E0 = exp(-(X.^2+Y.^2)/w0.^2); % input wave
@@ -74,9 +74,8 @@ num_steps = round(L/dz); % number of steps needed for one trip across the cavity
 Es = struct(); % initialize a struct for saving intermediate E fields
 
 % Select video name
-figure;
 videoname = sprintf('Omega=%.3f_L=%.0fm_Rc=%.0f_D=%.2fm.mp4', Omega, L, Rc1, D1);
-[saveFolder, v] = Set_Up_Video_OG(videoname); % set up the video
+v = Set_Up_Video(videoname); % set up the video
 open(v);
 
 %% SIMULATION, R --> L, one trip across in small steps
@@ -151,7 +150,7 @@ close(v); % save video
 % Set how many round trips across the cavity you want to take.
 % e.g. RHS --> LHS --> RHS = 1 round trip.
 
-num_round_trips = 20;
+num_round_trips = 1;
 E = E.*cmask1.*rmask1; % clip and shape the beam before it leaves
 P0 = sum(sum(abs(E).^2)); % initial power
 
@@ -215,15 +214,8 @@ for i = 1:num_round_trips
 end
 
 close(v); % save video
- 
-%% Post-processing (checking if converges to the expected mode for the confocal case)
 
-w0 = sqrt(lambda*L/(2*pi));
-wm = sqrt(lambda*L/(pi));
-w = BeamWaist_e2(E, X, Y)
-
-
-%%
+%% Post-processing
 
 % Trackers used for both numeric and analytic
 dz_post = 1; % little steps across the cavity  
