@@ -9,7 +9,7 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
         if sim.dz > 0 % laser traveling L --> R
             [laser, outputs, sim] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling right first
             Gau_RHS = laser.Gau; % profile at mirror 1
-            if a == 1
+            if a == 1 && toggles.resize_grid == true
                 [sim, laser, mirror, gain_medium] = Decrease_To_Grid0_Centroid(sim, laser, mirror, outputs, toggles);
             end
             if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
@@ -24,7 +24,7 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
         else % laser traveling R --> L
             [laser, outputs, sim] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling left first
             Gau_LHS = laser.Gau; % profile at mirror 2
-            if a == 1
+            if a == 1 && toggles.resize_grid == true
                 [sim, laser, mirror, gain_medium] = Decrease_To_Grid0_Centroid(sim, laser, mirror, outputs, toggles);
             end
             if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
@@ -47,7 +47,7 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
         % Mode convergence check
         if a >= 2 && strcmp(toggles.finish_line, 'convergence') % only run once some loss data is available
             [converged, state] = Check_Mode_Convergence(laser.Gau_a, laser.Gau, outputs.loss_frac(a-1), outputs.loss_frac(a), state);
-            if converged == true % mode convergence detected
+            if converged == true || a == sim.RTs % mode convergence detected or simulation over
                 outputs.Gau_RHS = Gau_RHS;
                 outputs.Gau_LHS = Gau_LHS;
                 break % finish propagation early (time skip)

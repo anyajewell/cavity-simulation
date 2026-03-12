@@ -7,7 +7,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     videoplot_frequency = 'every step'; % 'every step', 'every mirror', or 'never/none'
     finish_line = 'convergence'; % 'convergence' or 'RTs'
     absorbing_mask = true;
-    resize_grid = true;
+    resize_grid = false;
     toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; 
     toggles.videoplot_frequency = videoplot_frequency; toggles.finish_line = finish_line; toggles.absorbing_mask = absorbing_mask;
     toggles.resize_grid = resize_grid;
@@ -30,7 +30,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     frame.Omega = Omega; frame.accel = accel; frame.v0 = v0;
     
     % Simulation settings
-    L = 150e3; % cavity length, [m]
+    L = 100e3; % cavity length, [m]
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
     Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
     dz = L/Nz; % step size, sign determines initial direction [m]
@@ -44,7 +44,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     sim.RTs = RTs;
     
     % Mirrors
-    D1 = 1; % large size to reduce clipping, [m]
+    D1 = 0.67; % large size to reduce clipping, [m]
     D2 = D1; % diameter of mirror 2, [m]
     Rc1 = L; % radius of curvature for mirror 1, [m]
     Rc2 = Rc1; % radius of curvature for mirror 2, [m]

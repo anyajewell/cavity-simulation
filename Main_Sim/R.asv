@@ -3,9 +3,7 @@ function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirro
     while laser.pos < mirror(1).loc
         frame.Omega = frame.Omega; % opportunity to read/update Omega from other code
         frame.accel = frame.accel; % opportunity to read/update accel from other code
-        if laser.pos == 0 % beam at the center of the cavity
-            outputs.Gau_center = laser.Gau; % save center mode
-        end
+        if l
         if laser.pos + sim.dz > mirror(1).loc % beam will step past mirror
             dz_step = mirror(1).loc - laser.pos; % calculate fractional step
             if dz_step == 0 % beam will step directly to mirror 1
