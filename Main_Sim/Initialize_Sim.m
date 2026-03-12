@@ -1,4 +1,4 @@
-function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim()
+function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim()
     
     % Settings 
     track_centers = true;
@@ -6,7 +6,11 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     outputs_switch = true;
     videoplot_frequency = 'every step'; % 'every step', 'every mirror', or 'never/none'
     finish_line = 'convergence'; % 'convergence' or 'RTs'
-    toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; toggles.videoplot_frequency = videoplot_frequency; toggles.finish_line = finish_line;
+    absorbing_mask = true;
+    resize_grid = true;
+    toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; 
+    toggles.videoplot_frequency = videoplot_frequency; toggles.finish_line = finish_line; toggles.absorbing_mask = absorbing_mask;
+    toggles.resize_grid = resize_grid;
 
     % Constants
     c = 3e8; % [m/s]
@@ -15,7 +19,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     
     % Grid
     Lx = 4; % Length of square transverse domain (one side), [m]
-    N = 511; % sampling number
+    N = 512; % sampling number
     dx = Lx/N; % step size 
     sim.Lx = Lx; sim.N = N; sim.dx = dx;
     
@@ -26,7 +30,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     frame.Omega = Omega; frame.accel = accel; frame.v0 = v0;
     
     % Simulation settings
-    L = 100e3; % cavity length, [m]
+    L = 150e3; % cavity length, [m]
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
     Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
     dz = L/Nz; % step size, sign determines initial direction [m]
@@ -72,6 +76,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     [x, y, X, Y] = Create_Grid(N, Lx, dx);
     sim.x = x; sim.y = y; sim.X = X; sim.Y = Y;
     Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
+    P_ref = []; % to store reference power for round-trip loss calculation at RHS
     %Pseed = 1; % choose laser seed power, [W]
     %Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
     t0 = 0;
@@ -81,7 +86,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     loss_frac = zeros(1, RTs); % pre-allocate, to be filled
     loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = [];
-    laser.Gau_ini = Gau_ini; laser.Gau = Gau; 
+    laser.Gau_ini = Gau_ini; laser.Gau = Gau; laser.P_ref = P_ref;
     if toggles.outputs_switch == true
         outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac;
         outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax; outputs.zs = zs;
@@ -93,5 +98,30 @@ function [consts, sim, laser, frame, mirror, outputs, toggles] = Initialize_Sim(
     cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
     cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
     mirror(1).rmask = rmask1; mirror(2).rmask = rmask2; mirror(1).cmask = cmask1; mirror(2).cmask = cmask2;
-    
+
+    % Domain masks: absorbing mask
+    if toggles.absorbing_mask == true
+        r = sqrt(sim.X.^2 + sim.Y.^2);
+        r0 = 0.8*(sim.Lx/2); % damping starts at 80% radius
+        w = 0.1*(sim.Lx/2); % damping width
+        sim.mask_abs = ones(size(r));
+        idx = r > r0;
+        sim.mask_abs(idx) = exp(-((r(idx)-r0)/w).^8); % steep super-Gaussian
+    end
+
+    if toggles.gain_switch == true
+        gain_medium = Initialize_Gain_Medium(sim, mirror);
+    else
+        gain_medium = struct();   
+    end
+        
+    if toggles.resize_grid == true
+        sim.grid0.N = sim.N;
+        sim.grid0.dx = sim.dx;
+        sim.grid0.Lx = sim.Lx;
+        sim.grid0.x = sim.x;
+        sim.grid0.y = sim.y;
+        [sim, laser, mirror, gain_medium] = Increase_Domain_Size(sim, laser, mirror, toggles, 1024); % for the first pass only
+    end
+
 end
