@@ -3,7 +3,7 @@ function [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, dz
     z2 = laser.pos + dz_step;
     z1 = laser.pos;
 
-    dt_step = dz_step/consts.c;
+    dt_step = abs(dz_step)/consts.c;
     dv = frame.accel*dt_step; % step in velocity
     dTheta = dv/consts.c; % tilt due to transverse acceleration
 
