@@ -52,13 +52,13 @@ fig4 = Plot_Mirror_Loss(outputs.loss1, outputs.loss2, outputs.zs, sim.L);
 savefig(fig4, fullfile(outputs.saveFolder,'Mirror_Loss.fig'));
 exportgraphics(fig4, fullfile(outputs.saveFolder,'Mirror_Loss.png'), 'Resolution',300);
 
-fig5 = Plot_Imax_vs_Isat(outputs, gain_medium.I_sat, sim);
-savefig(fig5, fullfile(outputs.saveFolder,'Imax.fig'));
-exportgraphics(fig5, fullfile(outputs.saveFolder,'Imax.png'), 'Resolution',300);
-
-fig6 = Plot_RT_Gain(outputs.gain);
-savefig(fig6, fullfile(outputs.saveFolder,'Gain.fig'));
-exportgraphics(fig6, fullfile(outputs.saveFolder,'Gain.png'), 'Resolution',300);
+% fig5 = Plot_Imax_vs_Isat(outputs, gain_medium.I_sat, sim);
+% savefig(fig5, fullfile(outputs.saveFolder,'Imax.fig'));
+% exportgraphics(fig5, fullfile(outputs.saveFolder,'Imax.png'), 'Resolution',300);
+% 
+% fig6 = Plot_RT_Gain(outputs.gain);
+% savefig(fig6, fullfile(outputs.saveFolder,'Gain.fig'));
+% exportgraphics(fig6, fullfile(outputs.saveFolder,'Gain.png'), 'Resolution',300);
 
 Save_Workspace(consts, sim, laser, frame, mirror, outputs, gain_medium, toggles); % automatic save all structs and their variables
 close(outputs.v);
