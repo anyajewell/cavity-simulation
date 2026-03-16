@@ -1,4 +1,4 @@
-function [converged, state] = Check_Mode_Convergence(E_prev, E_curr, loss_prev, loss_curr, state, toggles, sim)
+function [converged, state] = Check_Mode_Convergence(E_prev, E_curr, loss_prev, loss_curr, state, toggles)
     
     eps_rho = 1e-4; % overlap tolerance
     eps_lambda = 1e-4; % eigenvalue tolerance
@@ -36,7 +36,7 @@ function [converged, state] = Check_Mode_Convergence(E_prev, E_curr, loss_prev, 
     loss_ok = abs(loss_curr - loss_prev) < eps_loss;
 
     % Single-lobed / centered shape test
-    mode_ok = Check_Single_Lobed_Mode(E_curr, sim.X, sim.Y);
+    [mode_ok, mode_metrics] = Check_Single_Lobed_Mode(E_curr, X, Y);
 
     if strcmp(toggles.convergence_def, 'TEM00') % has to be lowest order mode
         if overlap_ok && lambda_ok && loss_ok && mode_ok  % all conditions satisfied
@@ -59,7 +59,7 @@ end
 
 %% HELPER FUNCTION
 
-function is_single_lobed = Check_Single_Lobed_Mode(E, X, Y)
+function [is_single_lobed, metrics] = Check_Single_Lobed_Mode(E, X, Y)
 
     I = abs(E).^2;
     I = I / max(I(:));   % normalize intensity
@@ -72,7 +72,17 @@ function is_single_lobed = Check_Single_Lobed_Mode(E, X, Y)
     dy = mean(diff(Y(:,1)));
     dr = 0.5 * (abs(dx) + abs(dy));
 
-    % Condition: Center brighter than surrounding annulus
+    % 1) Peak near center
+    [~, idx_max] = max(I(:));
+    [imax, jmax] = ind2sub(size(I), idx_max);
+    x_peak = X(imax, jmax);
+    y_peak = Y(imax, jmax);
+    r_peak = sqrt(x_peak^2 + y_peak^2);
+
+    r_peak_tol = 3 * dr;   % allow a few pixels
+    peak_centered = r_peak < r_peak_tol;
+
+    % 2) Center brighter than surrounding annulus
     r_core  = 3 * dr;
     r_ring1 = 5 * dr;
     r_ring2 = 9 * dr;
@@ -85,7 +95,7 @@ function is_single_lobed = Check_Single_Lobed_Mode(E, X, Y)
 
     center_dominant = I_core > I_ring;
 
-    % Condition: No strong secondary peaks
+    % 3) No strong secondary peaks
     % Suppress small noise peaks using a threshold
     thresh = 0.1;  % only look at peaks above 10% of max
     BW = imregionalmax(I) & (I > thresh);
@@ -105,7 +115,7 @@ function is_single_lobed = Check_Single_Lobed_Mode(E, X, Y)
     end
 
     % Final heuristic
-    is_single_lobed = center_dominant && secondary_ok;
+    is_single_lobed = peak_centered && center_dominant && secondary_ok;
 
 end
 

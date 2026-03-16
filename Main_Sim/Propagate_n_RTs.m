@@ -46,7 +46,7 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
 
         % Mode convergence check
         if a >= 2 && strcmp(toggles.finish_line, 'convergence') % only run once some loss data is available
-            [converged, state] = Check_Mode_Convergence(laser.Gau_a, laser.Gau, outputs.loss_frac(a-1), outputs.loss_frac(a), state);
+            [converged, state] = Check_Mode_Convergence(laser.Gau_a, laser.Gau, outputs.loss_frac(a-1), outputs.loss_frac(a), state, toggles, sim);
             if converged == true || a == sim.RTs % mode convergence detected or simulation over
                 outputs.Gau_RHS = Gau_RHS;
                 outputs.Gau_LHS = Gau_LHS;

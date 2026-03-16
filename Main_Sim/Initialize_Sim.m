@@ -8,9 +8,10 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     finish_line = 'RTs'; % 'convergence' or 'RTs'
     absorbing_mask = true;
     resize_grid = false;
+    convergence_def = 'general'; % 'TEM00' or 'general'
     toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; 
     toggles.videoplot_frequency = videoplot_frequency; toggles.finish_line = finish_line; toggles.absorbing_mask = absorbing_mask;
-    toggles.resize_grid = resize_grid;
+    toggles.resize_grid = resize_grid; toggles.convergence_def = convergence_def;
 
     % Constants
     c = 3e8; % [m/s]
@@ -39,12 +40,12 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     tmax = dt*Nz; % max time, [s]
     z = linspace(Z0, L, Nz); % evaluatory locations within cavity
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z;
-    RTs = 1; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
+    RTs = 200; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
     
     % Mirrors
-    D1 = 1e15; % large size to reduce clipping, [m]
+    D1 = 0.67; % large size to reduce clipping, [m]
     D2 = D1; % diameter of mirror 2, [m]
     Rc1 = L; % radius of curvature for mirror 1, [m]
     Rc2 = Rc1; % radius of curvature for mirror 2, [m]
