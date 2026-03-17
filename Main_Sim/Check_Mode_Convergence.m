@@ -35,23 +35,22 @@ function [converged, state] = Check_Mode_Convergence(E_prev, E_curr, loss_prev, 
     % Test for loss stability
     loss_ok = abs(loss_curr - loss_prev) < eps_loss;
 
-    % Single-lobed / centered shape test
+    % Single-lobed / centered / radially-clean shape test
     mode_ok = Check_Single_Lobed_Mode(E_curr, sim.X, sim.Y);
 
     if strcmp(toggles.convergence_def, 'TEM00') % has to be lowest order mode
-        if overlap_ok && lambda_ok && loss_ok && mode_ok  % all conditions satisfied
+        if overlap_ok && lambda_ok && loss_ok && mode_ok
             state.counter = state.counter + 1;
         else
             state.counter = 0;
         end
     else
-        if overlap_ok && lambda_ok && loss_ok % all conditions satisfied
+        if overlap_ok && lambda_ok && loss_ok
             state.counter = state.counter + 1;
         else
             state.counter = 0;
         end
     end
-
     
     converged = state.counter >= N_consec;
 
@@ -72,7 +71,7 @@ function is_single_lobed = Check_Single_Lobed_Mode(E, X, Y)
     dy = mean(diff(Y(:,1)));
     dr = 0.5 * (abs(dx) + abs(dy));
 
-    % Condition: Center brighter than surrounding annulus
+    % Condition 1: Center brighter than surrounding annulus
     r_core  = 3 * dr;
     r_ring1 = 5 * dr;
     r_ring2 = 9 * dr;
@@ -85,9 +84,8 @@ function is_single_lobed = Check_Single_Lobed_Mode(E, X, Y)
 
     center_dominant = I_core > I_ring;
 
-    % Condition: No strong secondary peaks
-    % Suppress small noise peaks using a threshold
-    thresh = 0.1;  % only look at peaks above 10% of max
+    % Condition 2: No strong secondary peaks
+    thresh = 0.1; % only look at peaks above 10% of max
     BW = imregionalmax(I) & (I > thresh);
 
     peak_vals = I(BW);
@@ -95,17 +93,51 @@ function is_single_lobed = Check_Single_Lobed_Mode(E, X, Y)
 
     if isempty(peak_vals)
         secondary_ok = false;
-        second_peak_ratio = NaN;
     elseif numel(peak_vals) == 1
         secondary_ok = true;
-        second_peak_ratio = 0;
     else
         second_peak_ratio = peak_vals(2) / peak_vals(1);
-        secondary_ok = second_peak_ratio < 0.3;  % second peak much weaker
+        secondary_ok = second_peak_ratio < 0.3;
+    end
+
+    % Condition 3: Radial profile should be mostly monotone decreasing
+    % This catches residual higher-order ring/halo structure.
+    r_max = max(R(:));
+    r_edges = 0:dr:r_max;
+    r_centers = 0.5 * (r_edges(1:end-1) + r_edges(2:end));
+
+    I_radial = zeros(size(r_centers));
+    valid = false(size(r_centers));
+
+    for k = 1:numel(r_centers)
+        mask = (R >= r_edges(k)) & (R < r_edges(k+1));
+        if any(mask(:))
+            I_radial(k) = mean(I(mask));
+            valid(k) = true;
+        end
+    end
+
+    I_radial = I_radial(valid);
+
+    % only assess where intensity is still meaningful
+    keep = I_radial > 1e-3;
+    I_radial = I_radial(keep);
+
+    if numel(I_radial) < 3
+        radial_ok = false;
+    else
+        dI = diff(I_radial);
+
+        % measure how much the radial profile rises instead of falls
+        upward_content = sum(max(dI, 0));
+        total_variation = sum(abs(dI)) + eps;
+
+        ring_metric = upward_content / total_variation;
+
+        radial_ok = ring_metric < 0.05;  % profile can't rise much more than it falls
     end
 
     % Final heuristic
-    is_single_lobed = center_dominant && secondary_ok;
+    is_single_lobed = center_dominant && secondary_ok && radial_ok;
 
 end
-
