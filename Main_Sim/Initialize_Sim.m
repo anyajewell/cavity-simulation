@@ -8,7 +8,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     finish_line = 'convergence'; % 'convergence' or 'RTs'
     absorbing_mask = true;
     resize_grid = false;
-    convergence_def = 'TEM00'; % 'TEM00' or 'general'
+    convergence_def = 'general'; % 'TEM00' or 'general'
     toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; 
     toggles.videoplot_frequency = videoplot_frequency; toggles.finish_line = finish_line; toggles.absorbing_mask = absorbing_mask;
     toggles.resize_grid = resize_grid; toggles.convergence_def = convergence_def;
@@ -31,7 +31,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     frame.Omega = Omega; frame.accel = accel; frame.v0 = v0;
     
     % Simulation settings
-    L = 100e3; % cavity length, [m]
+    L = 150e3; % cavity length, [m]
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
     Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
     dz = L/Nz; % step size, sign determines initial direction [m]
@@ -40,12 +40,15 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     tmax = dt*Nz; % max time, [s]
     z = linspace(Z0, L, Nz); % evaluatory locations within cavity
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z;
-    RTs = 100000; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
+    RTs = 500; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
     
     % Mirrors
-    D1 = 1; % large size to reduce clipping, [m]
+    N_F = 0.1;
+    Ld = 1064*1e-9; % Laser wavelength, [m]
+    D1 = 2*sqrt(N_F*L*Ld);
+    %D1 = .8; % large size to reduce clipping, [m]
     D2 = D1; % diameter of mirror 2, [m]
     Rc1 = L; % radius of curvature for mirror 1, [m]
     Rc2 = Rc1; % radius of curvature for mirror 2, [m]
@@ -61,7 +64,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     zr = pi*w0^2/Ld; % Rayleigh range
     wz = w0*sqrt(1+(L/zr).^2); % spot size at mirror, analytic solution
     theta_D = Ld/D1; % diffraction angle
-    N_F = (D1/2)^2 / (L*Ld); % Fresnel number (>>1 means diffraction losses are small and higher order modes can be supported)
+    %N_F = (D1/2)^2 / (L*Ld); % Fresnel number (>>1 means diffraction losses are small and higher order modes can be supported)
     laser.Ld = Ld; laser.w0 = w0; laser.k0 = k0; laser.zr = zr; laser.wz = wz; laser.theta_D = theta_D; laser.N_F = N_F; laser.pos = Z0;
 
     % Set up video

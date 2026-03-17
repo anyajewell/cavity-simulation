@@ -60,5 +60,6 @@ exportgraphics(fig4, fullfile(outputs.saveFolder,'Mirror_Loss.png'), 'Resolution
 % savefig(fig6, fullfile(outputs.saveFolder,'Gain.fig'));
 % exportgraphics(fig6, fullfile(outputs.saveFolder,'Gain.png'), 'Resolution',300);
 
+outputs.converged_loss_fraction = 1 - (1 - outputs.loss1(end))*(1 - outputs.loss2(end));
 Save_Workspace(consts, sim, laser, frame, mirror, outputs, gain_medium, toggles); % automatic save all structs and their variables
 close(outputs.v);

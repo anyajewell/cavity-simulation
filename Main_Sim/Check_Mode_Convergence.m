@@ -35,10 +35,8 @@ function [converged, state] = Check_Mode_Convergence(E_prev, E_curr, loss_prev, 
     % Test for loss stability
     loss_ok = abs(loss_curr - loss_prev) < eps_loss;
 
-    % Single-lobed / centered / radially-clean shape test
-    mode_ok = Check_Single_Lobed_Mode(E_curr, sim.X, sim.Y);
-
     if strcmp(toggles.convergence_def, 'TEM00') % has to be lowest order mode
+        mode_ok = Check_Single_Lobed_Mode(E_curr, sim.X, sim.Y); % single-lobed / centered / radially-clean shape test
         if overlap_ok && lambda_ok && loss_ok && mode_ok
             state.counter = state.counter + 1;
         else
