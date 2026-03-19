@@ -1,0 +1,49 @@
+DeltaTheta = [0, logspace(-8,-4,20)]; % [rad]
+
+[consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(1); % initialize
+
+% Root folder for the whole sim
+root_folder = fullfile(outputs.saveFolder, 'DeltaTheta_Loss_Study');
+if ~exist(root_folder, 'dir')
+    mkdir(root_folder);
+end
+
+%%
+
+for i = 1:numel(DeltaTheta)
+
+    mirror(1).dtheta_x = DeltaTheta(i); mirror(1).dtheta_y = 0; % change mirror misalignment
+    
+     % Create unique folder for this DeltaTheta
+        folder_name = sprintf('dtheta_x_%.2e', mirror(1).dtheta_x);
+        case_folder = fullfile(root_folder, folder_name);
+    
+        if ~exist(case_folder, 'dir')
+            mkdir(case_folder);
+        end
+    
+    [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % propagate until convergence
+    
+    outputs.study.loss_RT(i) = 1 - (1 - outputs.loss1(end))*(1 - outputs.loss2(end));
+
+    % Save workspace
+    save(fullfile(case_folder, 'workspace.mat'), ...
+        'consts', 'sim', 'laser', 'frame', 'mirror', 'outputs', ...
+        'toggles', 'gain_medium');
+
+    % Clear before the next run
+    outputs.loss1 = [];
+    outputs.loss2 = [];
+    outputs.loss_frac = [];
+    outputs.centerx = [];
+    outputs.centery = [];
+    outputs.R1 = [];
+    outputs.R2 = [];
+    outputs.Imax = [];
+    outputs.zs = [];
+    outputs.Gau_center = [];
+    outputs.Gau_RHS = [];
+    outputs.Gau_LHS = [];
+    outputs.converged_loss_fraction = [];
+
+end

@@ -9,10 +9,10 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     absorbing_mask = true;
     resize_grid = false;
     convergence_def = 'general'; % 'TEM00' or 'general'
-    initial_profile = 'cavity mode'; % 'cavity mode' or 'general'
+    gui
     toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; 
     toggles.videoplot_frequency = videoplot_frequency; toggles.finish_line = finish_line; toggles.absorbing_mask = absorbing_mask;
-    toggles.resize_grid = resize_grid; toggles.convergence_def = convergence_def; toggles.initial_profile = initial_profile;
+    toggles.resize_grid = resize_grid; toggles.convergence_def = convergence_def;
 
     % Constants
     c = 3e8; % [m/s]
@@ -80,13 +80,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     % Set up simulation
     [x, y, X, Y] = Create_Grid(N, Lx, dx);
     sim.x = x; sim.y = y; sim.X = X; sim.Y = Y;
-
-    if strcmp(initial_profile, 'general') % initialize general gaussian beam
-        Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
-    else
-        Gau_ini = load("C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Results\Loss_vs_NF\NF=1\workspace_2026_03_17_144605.mat").outputs.Gau_LHS;
-    end
-
+    Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
     P_ref = []; % to store reference power for round-trip loss calculation at RHS
     %Pseed = 1; % choose laser seed power, [W]
     %Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
