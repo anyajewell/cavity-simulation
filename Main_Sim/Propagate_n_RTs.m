@@ -40,7 +40,7 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
         
         % Calculate and store RT loss
         if isfield(laser,'P_ref') && numel(laser.P_ref) >= 2 
-            loss_a = 1 - laser.P_ref(end) / laser.P_ref(end-1);
+            loss_a = 1 - (1-outputs.loss2(end))*(1-outputs.loss1(end)); % round-trip loss
             outputs.loss_frac(a) = loss_a;
         end
 

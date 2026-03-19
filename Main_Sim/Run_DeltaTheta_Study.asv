@@ -1,9 +1,9 @@
-DeltaTheta = logspace(-8, -4, 20);  % radians
+DeltaTheta = [0, logspace(-8,-4,20)]; % [rad]
 
 [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(1); % initialize
 
 % Root folder for the whole sim
-root_folder = fullfile(pwd, 'DeltaTheta');
+root_folder = fullfile(outputs.saveFolder, 'DeltaTheta_Loss_Study');
 if ~exist(root_folder, 'dir')
     mkdir(root_folder);
 end
@@ -12,30 +12,44 @@ end
 
 for i = 1:numel(DeltaTheta)
 
-mirror(1).dtheta_x = DeltaTheta(i); mirror(1).dtheta_y = 0; % mirror misalignment for this run
+    mirror(1).dtheta_x = DeltaTheta(i); mirror(1).dtheta_y = 0; % change mirror misalignment
+    
+     % Create unique folder for this DeltaTheta
+        folder_name = sprintf('dtheta_x_%.2e', mirror(1).dtheta_x);
+        case_folder = fullfile(root_folder, folder_name);
+    
+        if ~exist(case_folder, 'dir')
+            mkdir(case_folder);
+        end
+    
+    [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % propagate until convergence
+    
+    outputs.study.loss_RT(i) = 1 - (1 - outputs.loss1(end))*(1 - outputs.loss2(end));
 
- % Create unique folder for this DeltaTheta
-    folder_name = sprintf('dtheta_x_%e', mirror(1).dtheta_x);
-    case_folder = fullfile(root_folder, folder_name);
+    % Save workspace
+    save(fullfile(case_folder, 'workspace.mat'), ...
+        'consts', 'sim', 'laser', 'frame', 'mirror', 'outputs', ...
+        'toggles', 'gain_medium');
 
-    if ~exist(case_folder, 'dir')
-        mkdir(case_folder);
-    end
+    outputs.study.DeltaTheta(i) = DeltaTheta(i);
+    outputs.study.loss_RT(i) = 1 - (1 - outputs.loss1(end))*(1 - outputs.loss2(end));
+    outputs.study.nRT_used(i) = numel(outputs.loss_frac);
+    outputs.study.did_converge(i) = outputs.did_converge;
+    outputs.study.loss_frac_hist{i} = outputs.loss_frac;
 
-if laser.pos ~= mirror(1).loc && laser.pos ~= mirror(2).loc % wavefront is starting within the cavity
-    if sim.dz > 0
-        [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, 0);
-    else
-        [laser, outputs, sim, gain_medium] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, 0);
-    end
-    [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % now propagate # of desired RTs
-else % laser is starting at one end of the cavity
-    [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium);
-end
-
-% Save workspace
-save(fullfile(case_folder, 'workspace.mat'), ...
-    'consts', 'sim', 'laser', 'frame', 'mirror', 'outputs', ...
-    'toggles', 'gain_medium');
+    % Clear before the next run
+    outputs.loss1 = [];
+    outputs.loss2 = [];
+    outputs.loss_frac = [];
+    outputs.centerx = [];
+    outputs.centery = [];
+    outputs.R1 = [];
+    outputs.R2 = [];
+    outputs.Imax = [];
+    outputs.zs = [];
+    outputs.Gau_center = [];
+    outputs.Gau_RHS = [];
+    outputs.Gau_LHS = [];
+    outputs.converged_loss_fraction = [];
 
 end

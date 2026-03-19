@@ -24,7 +24,11 @@ for i = 1:numel(DeltaTheta)
     
     [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % propagate until convergence
     
+    % Store interesting transient values
+    outputs.study.DeltaTheta(i) = DeltaTheta(i);
     outputs.study.loss_RT(i) = 1 - (1 - outputs.loss1(end))*(1 - outputs.loss2(end));
+    outputs.study.nRT_used(i) = numel(outputs.loss_frac);
+    outputs.study.loss_frac_hist{i} = outputs.loss_frac;
 
     % Save workspace
     save(fullfile(case_folder, 'workspace.mat'), ...

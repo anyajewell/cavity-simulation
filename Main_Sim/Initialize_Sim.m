@@ -95,8 +95,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     Gau = Gau_ini;
     centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
-    loss_frac = zeros(1, RTs); % pre-allocate, to be filled
-    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = [];
+    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = []; loss_frac = [];
     laser.Gau_ini = Gau_ini; laser.Gau = Gau; laser.P_ref = P_ref;
     if toggles.outputs_switch == true
         outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac;
