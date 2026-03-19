@@ -1,4 +1,4 @@
-function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim()
+function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(N_F)
     
     % Settings 
     track_centers = true;
@@ -25,13 +25,14 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     sim.Lx = Lx; sim.N = N; sim.dx = dx;
     
     % Interlink frame settings
-    Omega = 0; % rotational velocity, [rad/sec]
-    accel = 0; % transverse acceleration, [m/s^2]
+    Omega = 0.001; % rotational velocity, [rad/sec]
+    accel = 1e-5; % transverse acceleration, [m/s^2]
     v0 = 0; % starting transverse velocity, [m/s]
     frame.Omega = Omega; frame.accel = accel; frame.v0 = v0;
     
     % Simulation settings
     L = 150e3; % cavity length, [m]
+    %D1 = 1;
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
     Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
     dz = L/Nz; % step size, sign determines initial direction [m]
@@ -45,7 +46,6 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     sim.RTs = RTs;
     
     % Mirrors
-    N_F = 0.1;
     Ld = 1064*1e-9; % Laser wavelength, [m]
     D1 = 2*sqrt(N_F*L*Ld);
     %D1 = .8; % large size to reduce clipping, [m]

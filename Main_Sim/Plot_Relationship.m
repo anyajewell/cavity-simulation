@@ -1,8 +1,8 @@
 function fig = Plot_Relationship(var1, var2)
     fig = figure;
-    plot(var1, var2, '.', 'MarkerSize', 15)
-    title({'Gain medium profile width' 'versus converged loss fraction'});
-    xlabel('\sigma / R');
-    ylabel('Converged loss fraction');
+    plot(var1, var2, 'LineWidth', 1.5)
+    title({'Fresnel number versus' 'converged loss'});
+    xlabel('N_F');
+    ylabel('Loss per round trip');
     grid on;
 end
