@@ -12,7 +12,12 @@ end
 
 for i = 1:numel(DeltaTheta)
 
+    open(outputs.v)
     mirror(1).dtheta_x = DeltaTheta(i); mirror(1).dtheta_y = 0; % change mirror misalignment
+
+    fprintf('\n=============================\n');
+    fprintf('Running case %d, dtheta_x = %.2e\n', i, mirror(1).dtheta_x);
+    fprintf('=============================\n');
     
      % Create unique folder for this DeltaTheta
         folder_name = sprintf('dtheta_x_%.2e', mirror(1).dtheta_x);
@@ -29,6 +34,8 @@ for i = 1:numel(DeltaTheta)
     outputs.study.loss_RT(i) = 1 - (1 - outputs.loss1(end))*(1 - outputs.loss2(end));
     outputs.study.nRT_used(i) = numel(outputs.loss_frac);
     outputs.study.loss_frac_hist{i} = outputs.loss_frac;
+    outputs.study.centerx_hist{i} = outputs.centerx;
+    outputs.study.centery_hist{i} = outputs.centery;
 
     % Save workspace
     save(fullfile(case_folder, 'workspace.mat'), ...

@@ -84,7 +84,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     if strcmp(initial_profile, 'general') % initialize general gaussian beam
         Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
     else
-        Gau_ini = load("C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Results\Loss_vs_NF\NF=1\workspace_2026_03_17_144605.mat").outputs.Gau_LHS;
+        Gau_ini = load("C:\Users\Anya Jewell\Documents\MATLAB\ORACLE\Results\2026-03-17\Loss_vs_NF_varying_D_rotating_accelerating\NF_1p0\workspace.mat").outputs.Gau_LHS;
     end
 
     P_ref = []; % to store reference power for round-trip loss calculation at RHS
