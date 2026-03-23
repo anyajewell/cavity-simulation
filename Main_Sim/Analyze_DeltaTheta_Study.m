@@ -38,7 +38,7 @@ for i = 1:numel(folders)
     end
 
     S = load(ws_file, 'outputs', 'sim', 'laser');
-    sim = S.sim;
+    sim = S.sim; laser = S.laser;
 
     k = k + 1;
     DeltaTheta_cell{k} = dtheta_val;
@@ -124,13 +124,13 @@ centery_cell      = centery_cell(idx);
 %% Plot 1: converged loss vs DeltaTheta
 figure;
 mask = DeltaTheta > 0;
-semilogx(DeltaTheta(mask), 100*loss_RT(mask), 'o-', 'LineWidth', 1.5);
+loglog(DeltaTheta(mask) / laser.theta_D, 100*loss_RT(mask), 'o-', 'LineWidth', 1.5);
 hold on;
 if any(DeltaTheta == 0) && any(mask)
-    plot(0, loss_RT(DeltaTheta==0), 'rs', 'MarkerFaceColor', 'r');
+    loglog(0, loss_RT(DeltaTheta==0), 'rs', 'MarkerFaceColor', 'r');
 end
 grid on;
-xlabel('\Delta\theta_x [rad]');
+xlabel('\Delta\theta_x / \theta_D');
 ylabel('Converged loss / round-trip (%)');
 title('Converged Loss vs Mirror Misalignment');
 
@@ -155,8 +155,8 @@ for i = 1:numel(DeltaTheta)
     end
 end
 grid on;
-xlabel('Round trip index');
-ylabel('Round-trip loss');
+xlabel('Round-trip index');
+ylabel('Loss / round-trip');
 title('Transient Loss Histories');
 legend('show', 'Location', 'eastoutside');
 
