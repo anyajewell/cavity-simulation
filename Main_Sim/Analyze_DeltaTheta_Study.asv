@@ -121,30 +121,10 @@ GauRHS_cell       = GauRHS_cell(idx);
 centerx_cell      = centerx_cell(idx);
 centery_cell      = centery_cell(idx);
 
-%% Analytic comparison
-
-d = sim.L; % cavity length
-r = mirror(1).D / 2; % mirror radius
-theta_0 = atan(r/d); % angle subtended by the target aperture
-alpha = 0.0008 * (theta_0^2 / laser.theta_D^2); % dimensionless parameter
+d = sim.L; r = mirror(1).D;
+theta_0 = 2*pi*(1 - d/sqrt(r^2 + d^2));
+alpha = 1;
 analytic_lossfunction = (alpha*laser.theta_D^2 + DeltaTheta.^2) ./ (theta_0.^2 + DeltaTheta.^2);
-
-% Numeric and analytic losses, as percents
-sim_loss = 100*loss_RT;
-analytic_lossfunction = 100*analytic_lossfunction;
-
-figure;
-loglog(DeltaTheta(DeltaTheta>0)/laser.theta_D, sim_loss(DeltaTheta>0), 'o-', 'LineWidth', 1.5, ...
-    'DisplayName', 'Simulation');
-yticklabels({'0.1','1','10','100'})
-hold on;
-loglog(DeltaTheta(DeltaTheta>0)/laser.theta_D, analytic_lossfunction(DeltaTheta>0), '--', 'LineWidth', 1.8, ...
-    'DisplayName', 'Analytic model');
-grid on;
-xlabel('\Delta\theta / \theta_D');
-ylabel('Converged loss / round trip (%)');
-title('Simulation vs Proposed Analytic Loss Function');
-legend('Location','best');
 
 %% Plot 1: converged loss vs DeltaTheta
 figure;
