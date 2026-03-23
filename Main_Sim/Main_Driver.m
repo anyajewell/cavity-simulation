@@ -14,7 +14,7 @@ path = "C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Cavity_Modes"; f
 
 %% Propagation by # of RTs
 
-[consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(); % initialize
+[consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(1); % initialize
 %%
 if laser.pos ~= mirror(1).loc && laser.pos ~= mirror(2).loc % wavefront is starting within the cavity
     if sim.dz > 0
@@ -36,9 +36,9 @@ x_ana = x_rot + x_acc; % analytic solution from ray optics
 Plot_Results_vs_Analytic(outputs.centerx, x_ana, outputs.zs)
 
 %%
-fig1 = Plot_RT_Loss(outputs.loss_frac, sim.RTs);
-savefig(fig1, fullfile(outputs.saveFolder,'RT_Loss.fig'));
-exportgraphics(fig1, fullfile(outputs.saveFolder,'RT_Loss.png'), 'Resolution',300);
+% fig1 = Plot_RT_Loss(outputs.loss_frac, sim.RTs);
+% savefig(fig1, fullfile(outputs.saveFolder,'RT_Loss.fig'));
+% exportgraphics(fig1, fullfile(outputs.saveFolder,'RT_Loss.png'), 'Resolution',300);
 
 fig2 = Plot_Center(outputs.centerx, outputs.zs);
 savefig(fig2, fullfile(outputs.saveFolder,'Center_vs_z.fig'));
