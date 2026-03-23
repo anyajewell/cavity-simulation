@@ -6,12 +6,7 @@ function [latest_loss, laser, outputs, gain_medium, sim] = Laser(dtheta_x, dthet
     mirror(1).dtheta_x = dtheta_x;
     mirror(1).dtheta_y = dtheta_y;
 
-    outputs.loss_frac = zeros(1, sim.RTs); % re-allocate loss-frac array to be filled
-
     [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % propagate until convergence
-
-    % Deliver the converged loss fraction
-    latest_loss = [];
     
         if isfield(outputs, 'loss_frac') && ~isempty(outputs.loss_frac)
         
@@ -21,7 +16,7 @@ function [latest_loss, laser, outputs, gain_medium, sim] = Laser(dtheta_x, dthet
             idx = find(loss_array, 1, 'last'); % zeros are ignored automatically
         
             if ~isempty(idx)
-                latest_loss = loss_array(idx);
+                latest_loss = loss_array(idx); % deliver the converged loss fraction
             else
                 % If array exists but is entirely zeros
                 latest_loss = loss_array(end);
