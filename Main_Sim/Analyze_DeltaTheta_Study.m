@@ -2,7 +2,7 @@
 
 clear; clc;
 
-root_folder = "C:\Users\Anya Jewell\Documents\MATLAB\ORACLE\Results\2026-03-19\DeltaTheta_Loss_Study";
+root_folder = "C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Results\DeltaTheta_Loss_Study_Gain";
 
 folders = dir(fullfile(root_folder, 'dtheta_x_*'));
 folders = folders([folders.isdir]);
