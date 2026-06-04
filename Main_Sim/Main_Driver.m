@@ -9,17 +9,17 @@ set(groot,'defaultFigureColor','w')
 
 dtheta_x = 0; dtheta_y = 0; sampling_time = 0.5;
 path = "C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Cavity_Modes"; file = "150km.mat";
-[consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, loss_frac] = Initialize_Laser_For_PCAC(path, file);
-[loss_frac, laser, outputs, gain_medium] = Laser(dtheta_x, dtheta_y, consts, sim, laser, frame, mirror, outputs, toggles, gain_medium);
+[consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, P_circ] = Initialize_Laser_For_PCAC(path, file);
+[P_circ, laser, outputs, gain_medium] = Laser(dtheta_x, dtheta_y, consts, sim, laser, frame, mirror, outputs, toggles, gain_medium);
 
 %% Propagation by # of RTs
 
 [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(1); % initialize
 %%
 if laser.pos ~= mirror(1).loc && laser.pos ~= mirror(2).loc % wavefront is starting within the cavity
-    if sim.dz > 0
+    if sim.dz > 0 % wavefront moving right
         [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, 0);
-    else
+    else % wavefront moving left
         [laser, outputs, sim, gain_medium] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, 0);
     end
     [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % now propagate # of desired RTs
