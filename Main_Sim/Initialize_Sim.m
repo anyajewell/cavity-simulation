@@ -9,7 +9,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     absorbing_mask = true;
     resize_grid = false;
     convergence_def = 'general'; % 'TEM00' or 'general'
-    initial_profile = 'cavity mode'; % 'cavity mode' or 'general'
+    initial_profile = 'general'; % 'cavity mode' or 'general'
     %save_location = 'local'; % 'local' or 'git'
     toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; 
     toggles.videoplot_frequency = videoplot_frequency; toggles.finish_line = finish_line; toggles.absorbing_mask = absorbing_mask;
@@ -34,10 +34,10 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     frame.Omega = Omega; frame.accel = accel; frame.v0 = v0;
     
     % Simulation settings
-    %L = 150e3; % cavity length, [m]
+    L = 150e3; % cavity length, [m]
     Ld = 1064*1e-9; % Laser wavelength, [m]
-    D1 = 1;
-    L = (D1/2)^2 / (N_F*Ld); % calculate cavity length from Fresnel number
+    %D1 = 1;
+    %L = (D1/2)^2 / (N_F*Ld); % calculate cavity length from Fresnel number
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
     Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
     dz = L/Nz; % step size, sign determines initial direction [m]
@@ -52,7 +52,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     sim.RTs = RTs;
     
     % Mirrors
-    %D1 = 2*sqrt(N_F*L*Ld);
+    D1 = 2*sqrt(N_F*L*Ld); % calculate mirror diameters from Fresnel number
     %D1 = .8; % large size to reduce clipping, [m]
     D2 = D1; % diameter of mirror 2, [m]
     Rc1 = L; % radius of curvature for mirror 1, [m]
