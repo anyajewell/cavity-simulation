@@ -14,7 +14,7 @@ path = "C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Cavity_Modes"; f
 
 %% Propagation by # of RTs
 
-[consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(1); % initialize
+[consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(.3); % initialize
 %%
 if laser.pos ~= mirror(1).loc && laser.pos ~= mirror(2).loc % wavefront is starting within the cavity
     if sim.dz > 0 % wavefront moving right

@@ -2,10 +2,10 @@ clear;
 clc;
 close all;
 
-NF_list = 0.1:0.1:1.0;
+NF_list = 0.3:0.1:1.0;
 
 % Root folder for the whole sweep
-root_folder = fullfile('C:\Users\jewellan\Documents\GitHub\cavity-simulation\Results\Loss_vs_NF', 'Fresnel_Sweep_Omega=0.002');
+root_folder = fullfile('C:\Users\jewellan\Documents\GitHub\cavity-simulation\Results\Loss_vs_NF\Varying_Cavity_Length', 'Fresnel_Sweep_Omega=0.001');
 if ~exist(root_folder, 'dir')
     mkdir(root_folder);
 end
