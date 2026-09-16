@@ -1,0 +1,335 @@
+%% NdYVO4_dual_rod_CW_model.m
+% CW rate-equation, spatial thermal, and thermo-optic lensing model,
+% Nd:YVO4 dual-rod laser. Cites Shen et al., Appl. Sci. 2017, 7, 470.
+% Plots: (1) power vs pump, (2) avg temperature vs pump, (3) temperature
+% map @ pump face, (4) temperature map longitudinal, (5)-(6) Delta n_e maps.
+
+clear; clc; close all;
+
+outdir = fullfile(fileparts(mfilename('fullpath')), 'figures');
+if ~exist(outdir,'dir'); mkdir(outdir); end
+
+%% 1. Physical constants
+h = 6.62607015e-34;     % Planck constant [J s]
+c = 2.99792458e8;       % speed of light [m/s]
+
+%% 2. Laser / crystal parameters (Table 1, Shen et al. 2017)
+lambda_p = 888e-9;      % pump wavelength [m]
+lambda_s = 1064e-9;     % laser wavelength [m]
+lambda_f = 1032e-9;     % mean fluorescence wavelength [m]
+nu_p = c/lambda_p;
+nu_s = c/lambda_s;
+
+T0_amb = 298;           % ambient temperature [K]
+Ka  = 5.10;             % thermal conductivity, a-axis [W/(m K)]
+Kc  = 5.23;             % thermal conductivity, c-axis [W/(m K)]
+Hconv = 2e4;            % convective coefficient [W/(m^2 K)]
+
+l   = 0.63;             % cavity length [m]
+lm  = 0.06;             % AOM length [m]
+lc  = 0.025;            % crystal length [m]
+w_x = 2e-3;             % crystal width [m]
+hgt = 2e-3;             % crystal height [m]
+
+n_tot = 6.24e25;        % Nd3+ ion density [1/m^3]
+Wup   = 0.8e-21;        % ETU coefficient [m^3/s]
+
+tau1  = 530e-12;        % lifetime, level 1 (4I11/2) [s]
+tau4  = 104.29e-6;      % upper-level lifetime (4F3/2) [s]
+tauup = 20e-9;          % ETU-manifold relaxation lifetime [s]
+
+beta40 = 0.420; beta41 = 0.467; beta42 = 0.110; beta43 = 0.003;   % branching ratios
+beta4to1 = beta41 + beta42 + beta43;
+
+sigma_ap0 = 1.2e-24;    % pump absorption cross section [m^2]
+sigma_es0 = 15.6e-23;   % laser emission cross section [m^2]
+
+no = 1.96; ne = 2.17;   % ordinary/extraordinary refractive indices
+nc_ref = (no+ne)/2;
+nm = 1.45;              % AOM refractive index
+
+Toc  = 0.57;            % output coupler transmission
+Lloss = 0.02;           % intrinsic loss
+
+omega0   = 420e-6;      % laser mode radius [m]
+omega_p0 = 450e-6;      % pump mode radius [m]
+
+%% Derived cavity quantities
+Vm   = pi*omega0^2 * l;                          % mode volume (paper, Sec. 2)
+leff = l + 2*lc*(nc_ref-1) + lm*(nm-1);          % effective cavity length
+tau_r = 2*leff/c;                                % round-trip time
+
+fprintf('Vm = %.4g m^3, leff = %.4f m, tau_r = %.4g s (%.2f ns)\n', Vm, leff, tau_r, tau_r*1e9);
+
+%% 3. Pump rate (Eq. 8)
+V_gain_each  = pi*omega_p0^2 * lc;
+alpha0       = sigma_ap0 * n_tot;
+absfrac      = 1 - exp(-alpha0*lc);
+N_ions_each  = n_tot * V_gain_each;
+
+Rp_of = @(Pp_each) (Pp_each*absfrac) / (h*nu_p*N_ions_each);   % Eq. 8
+
+%% 4. CW steady state, closed form (Eqs. 2, 9, 14, 16)
+Dn_th = (1/tau_r)*(Lloss + log(1/(1-Toc))) / (2*(lc/leff)*(c/nc_ref)*sigma_es0);   % Eq. 14, threshold
+fprintf('Threshold inversion Dn_th = %.4g m^-3\n', Dn_th);
+
+Pp_each_CW = 67;     % W per crystal (134 W total)
+[Ps_cw, phi_cw, n4_cw, n1_cw] = cw_state(Pp_each_CW, Rp_of, Dn_th, n_tot, tau4, tau1, ...
+                                          beta4to1, Wup, nc_ref, c, sigma_es0, ...
+                                          nu_s, Vm, tau_r, Toc);
+Ws_cw = (c/nc_ref)*sigma_es0*phi_cw;   % Eq. 9
+
+fprintf('\n--- CW steady state, 134 W total pump ---\n');
+fprintf('n4 = %.4g m^-3, n1 = %.4g m^-3, Dn = %.4g m^-3\n', n4_cw, n1_cw, n4_cw-n1_cw);
+fprintf('Simulated output power = %.2f W   (paper: 62.8 W sim / 61.6 W expt)\n', Ps_cw);
+
+%% 5. Heat generation formula (Eq. 18), manifold energies from Fig. 1
+E1_avg_cm1 = mean([1966 1988 2047 2062 2154 2182]);   % 4I11/2, Y1-Y6
+E0_avg_cm1 = mean([433 226 173 108 0]);               % 4I9/2, Z1-Z5
+E4_avg_cm1 = mean([11366 11384]);                     % 4F3/2, R1,R2
+
+E10 = wn2J(E1_avg_cm1 - E0_avg_cm1, h, c);
+E41 = wn2J(E4_avg_cm1 - E1_avg_cm1, h, c);
+Ef  = h*c/lambda_f;
+E4f = wn2J(E4_avg_cm1, h, c) - Ef;
+
+V_xtal = w_x*hgt*lc;
+Aside  = 2*(w_x+hgt)*lc;   % Eqs. 21-24, convective side faces
+
+%% 6. Plots 1 & 2: CW power & temperature vs. pump power (cf. Fig. 8a/8b)
+Pp_each_list = linspace(15,70,25);
+Ps_list = zeros(size(Pp_each_list));
+T_list  = zeros(size(Pp_each_list));
+for k = 1:numel(Pp_each_list)
+    [Ps_list(k), phik, n4k, n1k] = cw_state(Pp_each_list(k), Rp_of, Dn_th, n_tot, tau4, tau1, ...
+                                             beta4to1, Wup, nc_ref, c, sigma_es0, ...
+                                             nu_s, Vm, tau_r, Toc);
+    nupk = Wup*n4k^2*tauup;                                    % Eq. 1
+    Qk = E10*n1k/tau1 + E41*nupk/tauup + E4f*n4k/tau4;         % Eq. 18
+    T_list(k) = (T0_amb-273.15) + Qk*V_xtal/(Hconv*Aside);     % Eq. 19 + Eqs. 21-24
+end
+
+save_plot(outdir, 'cw_power_vs_pump', 2*Pp_each_list, Ps_list, ...
+          'Total pump power [W]', 'Output power [W]', ...
+          'CW output power vs. pump power (cf. paper Fig. 8a)');
+
+save_plot(outdir, 'cw_temperature_vs_pump', 2*Pp_each_list, T_list, ...
+          'Total pump power [W]', 'Average crystal temperature [C]', ...
+          'CW average crystal temperature vs. pump power (cf. paper Fig. 8b)');
+
+Qcw = E10*n1_cw/tau1 + E41*(Wup*n4_cw^2*tauup)/tauup + E4f*n4_cw/tau4;
+dT_cw = Qcw*V_xtal/(Hconv*Aside);
+fprintf('\n--- CW lumped average temperature, 134 W total pump ---\n');
+fprintf('Q_cw = %.3g W/m^3 -> steady dT = %.2f K -> T_avg = %.2f C\n', Qcw, dT_cw, T0_amb-273.15+dT_cw);
+fprintf('(paper: ~41-42 C simulated average, 43.8 C measured)\n');
+
+%% 7. Plots 3 & 4: spatial temperature maps (Eqs. 8-11, 1-6, 18, 19, 21-24)
+Nx = 41; Ny = 41; Nz = 26;
+xs = linspace(-w_x/2, w_x/2, Nx);
+ys = linspace(-hgt/2, hgt/2, Ny);
+zs = linspace(0, lc, Nz);
+[Xg, Yg] = meshgrid(xs, ys);
+
+Tfull = zeros(Ny, Nx, Nz);
+
+for kz = 1:Nz
+    z = zs(kz);
+    Ip = (2*Pp_each_CW/(pi*omega_p0^2)) * exp(-2*(Xg.^2+Yg.^2)/omega_p0^2) * exp(-alpha0*z);   % Eqs. 8-11
+    Rp_local = sigma_ap0*Ip/(h*nu_p);                          % Eq. 8
+
+    n4_local = solve_n4_local(Rp_local, Ws_cw, n_tot, tau4, tau1, beta4to1, Wup);   % Eq. 2
+    n1_local = tau1*(beta4to1*n4_local/tau4 + Wup*n4_local.^2 + Ws_cw*n4_local)/(1+Ws_cw*tau1);  % Eq. 5
+    nup_local = Wup*n4_local.^2*tauup;                          % Eq. 1
+    Q_local = E10*n1_local/tau1 + E41*nup_local/tauup + E4f*n4_local/tau4;   % Eq. 18
+
+    Tfull(:,:,kz) = solve_2d_conduction(Nx, Ny, w_x, hgt, Kc, Ka, Hconv, T0_amb, Q_local);  % Eq. 19 + Eqs. 21-24
+end
+
+fprintf('\n--- Spatial thermal map (134 W total pump / 67 W per crystal) ---\n');
+fprintf('Peak temperature = %.2f C (at the pump-entrance face, z=0)\n', max(Tfull(:))-273.15);
+fprintf('Volume-averaged temperature = %.2f C\n', mean(Tfull(:))-273.15);
+fprintf('(paper: peak ~57-58 C, average ~41-42 C simulated / 43.8 C measured)\n');
+
+save_map(outdir, 'temperature_map_pump_face', xs*1e3, ys*1e3, Tfull(:,:,1)-273.15, ...
+         'x [mm]', 'y [mm]', 'Temperature [C]', ...
+         'Temperature at pump-entrance face (z=0)');
+
+ix0 = round((Nx+1)/2);
+save_map(outdir, 'temperature_map_longitudinal', zs*1e3, ys*1e3, squeeze(Tfull(:,ix0,:))-273.15, ...
+         'z [mm] (along crystal length, z=0 is pump-entrance face)', 'y [mm]', 'Temperature [C]', ...
+         'Longitudinal temperature map at x=0 mid-plane, cf. paper Fig. 3e/f');
+
+%% 8. Plots 5 & 6: thermo-optic lensing, Delta n_e maps
+%Koechner, Solid-State Laser Engineering, 6th ed. (2006), Ch. 7 
+dne_dT = 8.5e-6;
+
+n_e_full = ne + dne_dT*(Tfull - T0_amb);
+
+dn_e_peak = dne_dT * (max(Tfull(:)) - T0_amb);
+fprintf('\n--- Thermo-optic lensing (supplementary; not computed in the paper) ---\n');
+fprintf('Peak temperature rise = %.2f K above ambient\n', max(Tfull(:)) - T0_amb);
+fprintf('Peak Delta n_e = %.3e   [n_e ranges %.6f to %.6f]\n', dn_e_peak, min(n_e_full(:)), max(n_e_full(:)));
+
+save_map(outdir, 'dn_e_map_pump_face', xs*1e3, ys*1e3, (n_e_full(:,:,1)-ne)*1e6, ...
+         'x [mm]', 'y [mm]', '\Delta n_e [\times10^{-6}]', ...
+         'Extraordinary-axis \Delta n_e at pump-entrance face (z=0)');
+
+save_map(outdir, 'dn_e_map_longitudinal', zs*1e3, ys*1e3, (squeeze(n_e_full(:,ix0,:))-ne)*1e6, ...
+         'z [mm] (along crystal length, z=0 is pump-entrance face)', 'y [mm]', '\Delta n_e [\times10^{-6}]', ...
+         '\Delta n_e along the crystal length, x=0 mid-plane');
+
+fprintf('\nSee %s for saved plots/data.\n', outdir);
+
+%% Local functions (must be at end of script)
+function n1 = n1_qss(n4, Ws, p)
+% Eq. 5, adiabatic quasi-steady-state value.
+    n1 = p.tau1 .* (p.beta4to1.*n4./p.tau4 + p.Wup.*n4.^2 + Ws.*n4) ./ (1 + Ws.*p.tau1);
+end
+
+function [Ps, phi, n4, n1] = cw_state(Pp_each, Rp_of, Dn_th, n_tot, tau4, tau1, ...
+                                       beta4to1, Wup, nc, c, sigma_es0, ...
+                                       nu_s, Vm, tau_r, Toc)
+% Closed-form CW steady state: n4 -> Dn_th above threshold (Eq. 14);
+% solve Eq. 2 for Ws, then Eq. 9 for phi_s, then Eq. 16 for Ps.
+    h = 6.62607015e-34;
+    Rp = Rp_of(Pp_each);
+    n0_approx = n_tot - Dn_th;
+    numer = Rp*n0_approx - Dn_th/tau4 - 2*Wup*Dn_th^2;
+    if numer <= 0
+        Ps = 0; phi = 0; n4 = Rp*n0_approx*tau4; n1 = 0;
+        return;
+    end
+    Ws = numer/Dn_th;                              % Eq. 2
+    phi = Ws/((c/nc)*sigma_es0);                    % Eq. 9
+    n4 = Dn_th;
+    n1 = tau1*(beta4to1*n4/tau4 + Wup*n4^2 + Ws*n4)/(1+Ws*tau1);   % Eq. 5
+    Ps = h*nu_s*phi*Vm/tau_r*log(1/(1-Toc));        % Eq. 16
+end
+
+function n4 = solve_n4_local(Rp, Ws, n_tot, tau4, tau1, beta4to1, Wup)
+% Vectorized Newton solve of Eq. 2 (dn4/dt=0) at every grid point.
+    n1fun = @(n4) tau1*(beta4to1*n4/tau4 + Wup*n4.^2 + Ws*n4)./(1+Ws*tau1);   % Eq. 5
+
+    n4 = Rp*n_tot*tau4 ./ (1 + Rp*tau4 + Ws*tau4);
+    for iter = 1:25
+        n1 = n1fun(n4);
+        eps_ = n4*1e-6 + 1e-10;
+        dn1 = (n1fun(n4+eps_) - n1) ./ eps_;
+        n0 = n_tot - n1 - n4;
+        f  = Rp.*n0 - n4/tau4 - 2*Wup*n4.^2 - Ws*(n4-n1);   % Eq. 2
+        dfdn4 = Rp.*(-dn1-1) - 1/tau4 - 4*Wup*n4 - Ws*(1-dn1);
+        n4 = n4 - f./dfdn4;
+        n4 = min(max(n4, 0), n_tot);
+    end
+end
+
+function T = solve_2d_conduction(Nx, Ny, Lx, Ly, Kx, Ky, H, T0, Qgrid)
+% Finite-volume solve of Eq. 19 (2D, steady) with Robin BCs (Eqs. 21-24).
+    dx = Lx/(Nx-1); dy = Ly/(Ny-1);
+    N = Nx*Ny;
+    idx = @(i,j) (j-1)*Nx + i;
+
+    maxnnz = 5*N;
+    rows = zeros(maxnnz,1); cols = zeros(maxnnz,1); vals = zeros(maxnnz,1);
+    b = zeros(N,1);
+    p = 0;
+
+    for j = 1:Ny
+        for i = 1:Nx
+            k = idx(i,j);
+            diagv = 0;
+            if i>1
+                g = Kx*dy/dx; p=p+1; rows(p)=k; cols(p)=idx(i-1,j); vals(p)=-g; diagv=diagv+g;
+            else
+                g = H*dy; diagv=diagv+g; b(k)=b(k)+g*T0;
+            end
+            if i<Nx
+                g = Kx*dy/dx; p=p+1; rows(p)=k; cols(p)=idx(i+1,j); vals(p)=-g; diagv=diagv+g;
+            else
+                g = H*dy; diagv=diagv+g; b(k)=b(k)+g*T0;
+            end
+            if j>1
+                g = Ky*dx/dy; p=p+1; rows(p)=k; cols(p)=idx(i,j-1); vals(p)=-g; diagv=diagv+g;
+            else
+                g = H*dx; diagv=diagv+g; b(k)=b(k)+g*T0;
+            end
+            if j<Ny
+                g = Ky*dx/dy; p=p+1; rows(p)=k; cols(p)=idx(i,j+1); vals(p)=-g; diagv=diagv+g;
+            else
+                g = H*dx; diagv=diagv+g; b(k)=b(k)+g*T0;
+            end
+            p=p+1; rows(p)=k; cols(p)=k; vals(p)=diagv;
+            b(k) = b(k) + Qgrid(j,i)*dx*dy;
+        end
+    end
+    rows = rows(1:p); cols = cols(1:p); vals = vals(1:p);
+    A = sparse(rows, cols, vals, N, N);
+    Tvec = A\b;
+    T = reshape(Tvec, Nx, Ny)';
+end
+
+function save_plot(outdir, name, x, y, xlab, ylab, titlestr)
+% Renders and saves a PNG; falls back to CSV if this MATLAB has no
+% raster backend available.
+    pngfile = fullfile(outdir, [name '.png']);
+    csvfile = fullfile(outdir, [name '.csv']);
+    saved_png = false;
+    try
+        f = figure('Name', titlestr, 'Visible', 'off');
+        set(f, 'Renderer', 'painters');
+        plot(x, y, 'o-', 'LineWidth', 1.5); grid on;
+        xlabel(xlab); ylabel(ylab); title(titlestr);
+        print(f, pngfile, '-dpng', '-painters', '-r150');
+        close(f);
+        saved_png = true;
+        fprintf('Saved plot: %s\n', pngfile);
+    catch ME
+        fprintf('Could not render "%s" as a PNG in this environment (%s).\n', name, ME.message);
+    end
+    if ~saved_png
+        T = table(x(:), y(:), 'VariableNames', {matlab.lang.makeValidName(xlab), matlab.lang.makeValidName(ylab)});
+        try
+            writetable(T, csvfile);
+            fprintf('Saved data instead as CSV: %s  (%s vs %s)\n', csvfile, xlab, ylab);
+        catch
+            fprintf('%s , %s\n', xlab, ylab);
+            for i = 1:numel(x)
+                fprintf('%.6g , %.6g\n', x(i), y(i));
+            end
+        end
+    end
+end
+
+function save_map(outdir, name, xvec, yvec, Zdata, xlab, ylab, cbarlab, titlestr)
+% Same as save_plot, for a 2D heatmap (imagesc-style).
+    pngfile = fullfile(outdir, [name '.png']);
+    csvfile = fullfile(outdir, [name '.csv']);
+    saved_png = false;
+    try
+        f = figure('Name', titlestr, 'Visible', 'off');
+        set(f, 'Renderer', 'painters');
+        imagesc(xvec, yvec, Zdata); axis image; set(gca,'YDir','normal');
+        cb = colorbar; cb.Label.String = cbarlab;
+        xlabel(xlab); ylabel(ylab); title(titlestr);
+        print(f, pngfile, '-dpng', '-painters', '-r150');
+        close(f);
+        saved_png = true;
+        fprintf('Saved map: %s\n', pngfile);
+    catch ME
+        fprintf('Could not render "%s" as a PNG in this environment (%s).\n', name, ME.message);
+    end
+    if ~saved_png
+        M = [0, xvec(:)'; yvec(:), Zdata];
+        try
+            writematrix(M, csvfile);
+            fprintf('Saved data instead as CSV: %s  (row1=x, col1=y, corner=0)\n', csvfile);
+        catch
+            fprintf('Could not save "%s" as CSV either; skipping.\n', name);
+        end
+    end
+end
+
+function E = wn2J(wn_cm1, h, c)
+% Wavenumber [cm^-1] -> photon energy [J].
+    E = h*c*(wn_cm1*100);
+end
