@@ -31,12 +31,12 @@ lm  = 0.06;             % AOM length [m]
 
 % Crystal
 % Shape: Rectangular Prism
-%lc  = 0.025;            % crystal length [m]
-%w_x = 2e-3;             % crystal width [m]
-%hgt = 2e-3;             % crystal height [m]
+lc  = 0.025;            % crystal length [m]
+w_x = 2e-3;             % crystal width [m]
+hgt = 2e-3;             % crystal height [m]
 % Shape: Cylinder
-r = 0.0015;             % crystal radius, [m]
-lc = 0.015;             % crystal length, [m]
+%r = 0.0015;             % crystal radius, [m]
+%lc = 0.015;             % crystal length, [m]
 
 n_tot = 6.24e25;        % Nd3+ ion density [1/m^3]
 Wup   = 0.8e-21;        % ETU coefficient [m^3/s]
@@ -60,12 +60,12 @@ Lloss = 0.02;           % intrinsic loss
 
 omega0   = 420e-6;      % laser mode radius [m]
 omega_p0 = 450e-6;      % pump mode radius [m]
-omega_p0 = 1.3e-3;      
+%omega_p0 = 1.3e-3;      
 
 %% Derived cavity quantities
 Vm   = pi*omega0^2 * l;                          % mode volume (paper, Sec. 2)
 leff = l + 2*lc*(nc_ref-1) + lm*(nm-1);          % effective cavity length
-leff = l + 2*lc*(nc_ref-1);                      % effective cavity length, no AOM in cavity
+%leff = l + 2*lc*(nc_ref-1);                      % effective cavity length, no AOM in cavity
 tau_r = 2*leff/c;                                % round-trip time
 
 fprintf('Vm = %.4g m^3, leff = %.4f m, tau_r = %.4g s (%.2f ns)\n', Vm, leff, tau_r, tau_r*1e9);
@@ -102,10 +102,10 @@ E41 = wn2J(E4_avg_cm1 - E1_avg_cm1, h, c);
 Ef  = h*c/lambda_f;
 E4f = wn2J(E4_avg_cm1, h, c) - Ef;
 
-%V_xtal = w_x*hgt*lc; % crystal volume, rectangular prism
-V_xtal = pi*r^2*lc; % crystal volume, cylinder 
-%Aside  = 2*(w_x+hgt)*lc;   % Eqs. 21-24, convective side faces
-Aside = 2*pi*r*lc;
+V_xtal = w_x*hgt*lc; % crystal volume, rectangular prism
+%V_xtal = pi*r^2*lc; % crystal volume, cylinder 
+Aside  = 2*(w_x+hgt)*lc;   % Eqs. 21-24, convective side faces
+%Aside = 2*pi*r*lc;
 
 %% 6. Plots 1 & 2: CW power & temperature vs. pump power (cf. Fig. 8a/8b)
 Pp_each_list = linspace(15,70,25);
