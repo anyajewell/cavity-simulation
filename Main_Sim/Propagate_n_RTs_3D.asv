@@ -6,7 +6,7 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
     
     Nz = sim.Nz;
     steps_per_RT = 2*Nz; % number of spatial steps per round-trip
-    pixel_area = sim.dx*sim.dy;
+    power_factor =  0.5*consts.c*consts.eps0*sim.dx*sim.dy;
     state = []; % initialize for convergence checks
     check_convergence = strcmp(toggles.finish_line, 'convergence'); % if true, we are checking convergence every round-trip
     previous_loss = NaN;
@@ -19,7 +19,7 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
         rhs_reflectance = NaN;
 
         % Inner Loop:
-        for step = 1:steps_per_RT % step through this round-trip
+        for step = 1:steps_per_RT % step through this round-trip, every step represents a spatial and time step
 
             [EplusNext, EminusAtRHS, outputs, gain_medium] = R_3D(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % forward-propagating field
 
@@ -34,7 +34,7 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
             laser.Eminus = EminusNext;
 
             % Update clock
-            sim.t = sim.t + sim.dt;
+            sim.t(end+1) = sim.t(end) + sim.dt;
 
             % The seed reaches the RHS halfway through this round trip.
             if step == Nz && toggles.outputs_switch
@@ -42,7 +42,11 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
                 rhs_reflectance = outputs.R1(end);
             end
 
-            step
+            Pplus = power_factor * reshape( ...
+                sum(sum(abs(laser.Eplus).^2, 1), 2), 1, []);
+
+            Pminus = power_factor * reshape( ...
+                sum(sum(abs(laser.Eminus).^2, 1), 2), 1, []);
 
         end
 
@@ -54,11 +58,11 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
             power_factor = 0.5*consts.c*consts.eps0*sim.dx*sim.dy;
             rt_loss = 1 - rhs_reflectance*outputs.R2(end); % round-trip loss
             outputs.loss_frac(end+1) = rt_loss;
-            outputs.P_circ(end+1) = pixel_area*sum(abs(E_end).^2, 'all'); % circulating power
+            outputs.P_circ(end+1) = power_factor*sum(abs(E_end).^2, 'all'); % circulating power
             outputs.Gau_RHS = E_rhs;
             outputs.Gau_LHS = E_end;
-            outputs.P_circ_RHS = pixel_area*sum(abs(E_rhs).^2, 'all');
-            outputs.P_circ_LHS = pixel_area*sum(abs(E_end).^2, 'all');
+            outputs.P_circ_RHS = power_factor*sum(abs(E_rhs).^2, 'all');
+            outputs.P_circ_LHS = power_factor*sum(abs(E_end).^2, 'all');
 
             % Mode convergence check
             if check_convergence && isfinite(previous_loss) && isfinite(rt_loss) && any(E_start(:)) && any(E_end) % only runs once some loss data is available

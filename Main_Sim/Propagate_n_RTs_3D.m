@@ -11,6 +11,12 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
     check_convergence = strcmp(toggles.finish_line, 'convergence'); % if true, we are checking convergence every round-trip
     previous_loss = NaN;
 
+    outputs.t = sim.t;
+    outputs.Pplus = power_factor*reshape( ...
+        sum(sum(abs(laser.Eplus).^2, 1), 2), 1, []);
+    outputs.Pminus = power_factor*reshape( ...
+        sum(sum(abs(laser.Eminus).^2, 1), 2), 1, []);
+
     % Outer Loop:
     for a = 1:sim.RTs % go for the prescribed number of round-trips
 
@@ -19,7 +25,7 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
         rhs_reflectance = NaN;
 
         % Inner Loop:
-        for step = 1:steps_per_RT % step through this round-trip
+        for step = 1:steps_per_RT % step through this round-trip, every step represents a spatial and time step
 
             [EplusNext, EminusAtRHS, outputs, gain_medium] = R_3D(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % forward-propagating field
 
@@ -42,7 +48,16 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
                 rhs_reflectance = outputs.R1(end);
             end
 
-            step
+            Pplus = power_factor * reshape( ...
+                sum(sum(abs(laser.Eplus).^2, 1), 2), 1, []);
+
+            Pminus = power_factor * reshape( ...
+                sum(sum(abs(laser.Eminus).^2, 1), 2), 1, []);
+
+            outputs.t(end+1) = sim.t; % update time history, one per step
+            outputs.Pplus(end+1,:) = Pplus;
+            outputs.Pminus(end+1,:) = Pminus;
+            outputs.U_cavity(end+1) = sim.dt*sum(Pplus + Pminus); % energy contained within the cavity
 
         end
 

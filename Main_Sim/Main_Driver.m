@@ -20,6 +20,51 @@ path = "C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Cavity_Modes"; f
 
 %% Post-Processing
 
+figure;
+tiledlayout(2,1);
+sgtitle('Single wavefront propagating in a 150 km cavity, clipping enabled, one round-trip, 1 W seed','Color','k')
+set(gcf, 'Color', 'w');
+set(findall(gcf, 'Type', 'axes'), 'Color', 'w');
+
+nexttile;
+imagesc(sim.z/1e3, outputs.t*1e6, outputs.Pplus);
+set(gca, 'XColor', 'k', 'YColor', 'k');
+axis xy;
+clim([0 1]);
+xlabel('z [km]','Color', 'k');
+ylabel('Time [\mus]','Color', 'k');
+title('Right-going wave', 'Color', 'k');
+colorbar;
+cb = colorbar;
+cb.Label.String = 'Power [W]';
+cb.Label.Color = 'k';
+cb.Color = 'k';
+
+nexttile;
+imagesc(sim.z/1e3, outputs.t*1e6, outputs.Pminus);
+set(gca, 'XColor', 'k', 'YColor', 'k');
+axis xy;
+clim([0 1]);
+xlabel('z [km]','Color', 'k');
+ylabel('Time [\mus]','Color', 'k');
+title('Left-going wave','Color', 'k');
+colorbar;
+cb = colorbar;
+cb.Label.String = 'Power [W]';
+cb.Label.Color = 'k';
+cb.Color = 'k';
+
+%%
+figure;
+plot(outputs.t*1e6, ...
+    outputs.U_cavity/outputs.U_cavity(1), 'LineWidth', 1.5);
+xlabel('Time [\mus]');
+ylabel('U / U_0');
+grid on;
+
+
+%% Legacy
+
 % Analytic solution
 x_rot = -frame.Omega/consts.c * (outputs.zs.^2 + 0.5*sim.L*outputs.zs);
 x_acc = (frame.v0/consts.c)*(outputs.zs - sim.Z0) + (frame.accel/(2*consts.c^2))*(outputs.zs - sim.Z0).^2;

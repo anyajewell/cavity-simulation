@@ -39,7 +39,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     D1 = 1;
     %L = (D1/2)^2 / (N_F*Ld); % calculate cavity length from Fresnel number
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
-    Nz = 10; % number of steps in one pass across the cavity (1/2 a round trip), longitudinal discretization
+    Nz = 20; % number of steps in one pass across the cavity (1/2 a round trip), longitudinal discretization
     dz = L/Nz; % step size, sign determines initial direction [m]
     z_edges = Z0 + (0:Nz)*dz; % from -L/2 to +L/2
     z = Z0 + ((1:Nz) - 0.5)*dz; % cell centers, field-defined locations within the cavity
@@ -101,11 +101,11 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     laser.Eplus(:,:,1) = Gau_ini; % seed the first cell with a right-going Gaussian
     centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
-    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = []; loss_frac = []; P_circ = [];
+    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = []; loss_frac = []; P_circ = []; Pplus = []; Pminus = []; U_cavity = [];
     laser.Gau_ini = Gau_ini; laser.Gau = Gau; laser.P_ref = P_ref; laser.P_seed = P_seed;
     if toggles.outputs_switch == true
-        outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac; outputs.P_circ = P_circ;
-        outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax; outputs.zs = zs;
+        outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac; outputs.P_circ = P_circ; outputs.Pplus = Pplus; outputs.Pminus = Pminus; outputs.U_cavity = U_cavity;
+        outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax; outputs.zs = zs; outputs.t = [];
     end
      
     % Mirror masks: reflecting lens phase screens and clipping masks
