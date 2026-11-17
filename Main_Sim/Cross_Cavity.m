@@ -4,7 +4,7 @@
 
 function [laser, outputs, gain_medium] = Cross_Cavity(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium)
 
-    if sim.dz > 0 % laser traveling L --> R
+    if sim.direction > 0 % laser traveling L --> R
             [laser, outputs, sim] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling right first
             outputs = Write_Video_Frame(sim, laser, toggles, outputs);
 

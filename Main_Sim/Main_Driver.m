@@ -17,7 +17,7 @@ path = "C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Cavity_Modes"; f
 [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(1); % initialize
 %%
 if laser.pos ~= mirror(1).loc && laser.pos ~= mirror(2).loc % wavefront is starting within the cavity
-    if sim.dz > 0 % wavefront moving right
+    if sim.direction > 0 % wavefront moving right
         [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, 0);
     else % wavefront moving left
         [laser, outputs, sim, gain_medium] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, 0);

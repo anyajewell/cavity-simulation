@@ -40,13 +40,14 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     L = (D1/2)^2 / (N_F*Ld); % calculate cavity length from Fresnel number
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
     Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
-    dz = L/Nz; % step size, sign determines initial direction [m]
+    dz = L/Nz; % spatial step used to determine the initial direction [m]
     tau = 2*L/c; % round-trip time, [s]
-    t0 = 0; t(1) = t0;
-    dt = abs(dz/c); % time step, [s]
+    t0 = 0;
+    dt = abs(dz/c); % propagation time step, [s]
     tmax = dt*Nz; % max time, [s]
-    z = linspace(Z0, L, Nz); % evaluatory locations within cavity
-    sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z; sim.tau = tau;
+    t = t0 + (0:Nz)*dt;
+    z = linspace(-L/2, L/2, Nz+1); % spatial locations within the cavity [m]
+    sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.direction = sign(dz); sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z; sim.tau = tau;
     RTs = 1; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
@@ -70,7 +71,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     wz = w0*sqrt(1+(L/zr).^2); % spot size at mirror, analytic solution
     theta_D = Ld/D1; % diffraction angle
     %N_F = (D1/2)^2 / (L*Ld); % Fresnel number (>>1 means diffraction losses are small and higher order modes can be supported)
-    laser.Ld = Ld; laser.w0 = w0; laser.k0 = k0; laser.zr = zr; laser.wz = wz; laser.theta_D = theta_D; laser.N_F = N_F; laser.pos = Z0;
+    laser.Ld = Ld; laser.w0 = w0; laser.k0 = k0; laser.zr = zr; laser.wz = wz; laser.theta_D = theta_D; laser.N_F = N_F; laser.pos = Z0; laser.time = t0;
 
     % Set up video
     videoname = sprintf('Omega=%.3f_accel=%.2e_L=%.0f_D=%.2f_RTs=%.0f.mp4', Omega, accel, L, D1, RTs);
@@ -94,16 +95,14 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     P_ref = []; % to store reference power for round-trip loss calculation at RHS
     %Pseed = 1; % choose laser seed power, [W]
     %Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
-    t0 = 0;
-    t = linspace(t0,tmax,Nz); % timesteps
     Gau = Gau_ini;
     centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
-    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = []; loss_frac = [];
+    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = []; ts = []; loss_frac = [];
     laser.Gau_ini = Gau_ini; laser.Gau = Gau; laser.P_ref = P_ref;
     if toggles.outputs_switch == true
         outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac;
-        outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax; outputs.zs = zs;
+        outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax; outputs.zs = zs; outputs.ts = ts;
     end
      
     % Mirror masks: reflecting lens phase screens and clipping masks

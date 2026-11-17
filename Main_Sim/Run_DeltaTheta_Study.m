@@ -52,6 +52,7 @@ for i = 1:numel(DeltaTheta)
     outputs.R2 = [];
     outputs.Imax = [];
     outputs.zs = [];
+    outputs.ts = [];
     outputs.Gau_center = [];
     outputs.Gau_RHS = [];
     outputs.Gau_LHS = [];

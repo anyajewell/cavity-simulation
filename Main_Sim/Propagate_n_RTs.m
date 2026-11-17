@@ -6,7 +6,7 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
 
         laser.Gau_a = laser.Gau; % beam profile at the start of this round trip (RT)
 
-        if sim.dz > 0 % laser traveling L --> R
+        if sim.direction > 0 % laser traveling L --> R
             [laser, outputs, sim] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling right first
             Gau_RHS = laser.Gau; % profile at mirror 1
             if a == 1 && toggles.resize_grid == true

@@ -6,21 +6,12 @@ function [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirro
         if laser.pos == 0 % beam at the center of the cavity
             outputs.Gau_center = laser.Gau; % save center mode
         end
-        if laser.pos + sim.dz > mirror(1).loc % beam will step past mirror
-            dz_step = mirror(1).loc - laser.pos; % calculate fractional step
-            if dz_step == 0 % beam will step directly to mirror 1
-                if toggles.track_centers == true && toggles.outputs_switch == true
-                    outputs.centerx(end+1) = trapz(trapz(sim.X.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center x
-                    outputs.centery(end+1) = trapz(trapz(sim.Y.*abs(laser.Gau).^2))/trapz(trapz(abs(laser.Gau).^2)); % track center y
-                end
-                break
-            else % propagate by fractional step to mirror 1
-            [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, dz_step); % propagate fractional step to mirror
-            laser.pos = laser.pos + dz_step; % update laser position
-            end
-        else % propagate by dz, as normal
-            [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, sim.dz); % propagation loop
-            laser.pos = laser.pos + sim.dz; % update laser position
+        dt_to_mirror = (mirror(1).loc - laser.pos)/consts.c;
+        dt_step = min(sim.dt, dt_to_mirror);
+        [laser, outputs] = Prop(consts, sim, laser, frame, outputs, toggles, dt_step);
+        laser.pos = laser.pos + consts.c*dt_step;
+        if dt_step == dt_to_mirror
+            laser.pos = mirror(1).loc;
         end
     end
 

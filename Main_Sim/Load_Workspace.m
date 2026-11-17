@@ -21,6 +21,20 @@ function [consts, sim, laser, frame, mirror, outputs, gain_medium, toggles] = Lo
     gain_medium = data.gain_medium;
     toggles = data.toggles;
 
+    % Upgrade workspaces created before propagation used elapsed time as its step.
+    if ~isfield(sim, 'direction')
+        sim.direction = sign(sim.dz);
+    end
+    if ~isfield(sim, 'dt')
+        sim.dt = abs(sim.dz)/consts.c;
+    end
+    if ~isfield(laser, 'time')
+        laser.time = sim.t0;
+    end
+    if ~isfield(outputs, 'ts')
+        outputs.ts = [];
+    end
+
     fprintf('Workspace successfully loaded from:\n%s\n', fullpath);
 
 end

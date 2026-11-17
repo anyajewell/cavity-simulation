@@ -1,3 +1,3 @@
 function [sim] = Turn_Around(sim)
-    sim.dz = -sim.dz;
+    sim.direction = -sim.direction;
 end
