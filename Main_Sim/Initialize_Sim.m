@@ -28,25 +28,25 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     sim.Lx = Lx; sim.N = N; sim.dx = dx;
     
     % Interlink frame settings
-    Omega = 0.001; % rotational velocity, [rad/sec]
-    accel = 1e-5; % transverse acceleration, [m/s^2]
+    Omega = 0; % rotational velocity, [rad/sec]
+    accel = 0; % transverse acceleration, [m/s^2]
     v0 = 0; % starting transverse velocity, [m/s]
     frame.Omega = Omega; frame.accel = accel; frame.v0 = v0;
     
     % Simulation settings
-    %L = 150e3; % cavity length, [m]
+    L = 150e3; % cavity length, [m]
     Ld = 1064*1e-9; % Laser wavelength, [m]
     D1 = 1;
-    L = (D1/2)^2 / (N_F*Ld); % calculate cavity length from Fresnel number
+    %L = (D1/2)^2 / (N_F*Ld); % calculate cavity length from Fresnel number
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
     Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
     dz = L/Nz; % step size, sign determines initial direction [m]
+    z_edges = Z0 + (0:Nz)*dz; % from -L/2 to +L/2
+    z = Z0 + ((1:Nz) - 0.5)*dz; % cell centers, field-defined locations within the cavity
     tau = 2*L/c; % round-trip time, [s]
-    t0 = 0; t(1) = t0;
+    t0 = 0;
     dt = abs(dz/c); % time step, [s]
-    tmax = dt*Nz; % max time, [s]
-    z = linspace(Z0, L, Nz); % evaluatory locations within cavity
-    sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z; sim.tau = tau;
+    sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t0; sim.dt = dt; sim.z_edges = z_edges; sim.z = z; sim.tau = tau;
     RTs = 1; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
@@ -94,9 +94,10 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     P_ref = []; % to store reference power for round-trip loss calculation at RHS
     %Pseed = 1; % choose laser seed power, [W]
     %Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
-    t0 = 0;
-    t = linspace(t0,tmax,Nz); % timesteps
     Gau = Gau_ini;
+    laser.Eplus = complex(zeros(N, N, Nz, 'like', real(Gau_ini))); % forward (right) propagating field
+    laser.Eminus = complex(zeros(N, N, Nz, 'like', real(Gau_ini))); % backward (left) propagating field
+    laser.Eplus(:,:,1) = Gau_ini; % seed the first cell with a right-going Gaussian
     centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = []; loss_frac = [];

@@ -5,7 +5,7 @@ clc;
 figure;
 set(groot,'defaultFigureColor','w')
 
-%% Run with PCAC flow
+%% Run with PCAC flow. Skip otherwise.
 
 dtheta_x = 0; dtheta_y = 0; sampling_time = 0.5;
 path = "C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Cavity_Modes"; file = "150km.mat";
@@ -15,17 +15,8 @@ path = "C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Cavity_Modes"; f
 %% Propagation by # of RTs
 
 [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(1); % initialize
-%%
-if laser.pos ~= mirror(1).loc && laser.pos ~= mirror(2).loc % wavefront is starting within the cavity
-    if sim.dz > 0 % wavefront moving right
-        [laser, outputs, sim, gain_medium] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, 0);
-    else % wavefront moving left
-        [laser, outputs, sim, gain_medium] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium, 0);
-    end
-    [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % now propagate # of desired RTs
-else % laser is starting at one end of the cavity
-    [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium);
-end
+%% Propagate
+[laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % propagate # of desired RTs
 
 %% Post-Processing
 
