@@ -39,8 +39,8 @@ function [EminusNext, EplusAtLHS, outputs] = ...
     
     if toggles.outputs_switch
         pixel_area = sim.dx*sim.dy;
-        RP_before = pixel_area*sum(abs(E_incident).^2, 'all'); % power before mirror 2
-        RP_after = pixel_area*sum(abs(E_reflected).^2, 'all'); % power after mirror 2
+        RP_before = 0.5*consts.c*consts.eps0*pixel_area*sum(abs(E_incident).^2, 'all'); % power before mirror 2
+        RP_after = 0.5*consts.c*consts.eps0*pixel_area*sum(abs(E_reflected).^2, 'all'); % power after mirror 2
     
         reflectance = NaN;
         if RP_before > 0

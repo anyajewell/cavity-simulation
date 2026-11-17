@@ -40,10 +40,11 @@ function [EplusNext, EminusAtRHS, outputs, sim, gain_medium] = R_3D(consts, sim,
     % Record mirror loss and intensity before applying gain.
     pixel_area = sim.dx*sim.dy;
     intensity_factor = 0.5*consts.c*consts.eps0;
+    power_factor = intensity_factor*pixel_area;
     
     if toggles.outputs_switch
-        RP_before = pixel_area*sum(abs(E_incident).^2, 'all');
-        RP_after = pixel_area*sum(abs(E_reflected).^2, 'all');
+        RP_before = power_factor*sum(abs(E_incident).^2, 'all');
+        RP_after = power_factor*sum(abs(E_reflected).^2, 'all');
     
         reflectance = NaN;
         if RP_before > 0
@@ -66,7 +67,7 @@ function [EplusNext, EminusAtRHS, outputs, sim, gain_medium] = R_3D(consts, sim,
         if toggles.outputs_switch
             gain_ratio = NaN;
             if RP_after > 0
-                RP_after_gain = pixel_area*sum(abs(E_reflected).^2, 'all');
+                RP_after_gain = power_factor*sum(abs(E_reflected).^2, 'all');
                 gain_ratio = RP_after_gain/RP_after; % gain
             end
             outputs.gain(end+1) = gain_ratio;

@@ -1,9 +1,9 @@
 %% Get Ready
 
-clear all;
+clear all; close all;
 clc;
-figure;
-set(groot,'defaultFigureColor','w')
+%figure;
+%set(groot,'defaultFigureColor','w')
 
 %% Run with PCAC flow. Skip otherwise.
 
@@ -16,7 +16,7 @@ path = "C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Cavity_Modes"; f
 
 [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(1); % initialize
 %% Propagate
-[laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % propagate # of desired RTs
+[laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % propagate # of desired RTs
 
 %% Post-Processing
 
