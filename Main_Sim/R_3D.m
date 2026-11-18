@@ -14,12 +14,12 @@ function [EplusNext, EminusAtRHS, outputs, sim, gain_medium] = R_3D(consts, sim,
     
     % Advance each interior slice one cell to the right:
     for j = 1:Nz-1
-        slice.Gau = Eplus(:,:,j);
-        slice.pos = sim.z(j);
+        slice.Gau = Eplus(:,:,j); % picks out the longitudinal cell
+        slice.pos = sim.z(j); % corresponding position
         slice = Prop(consts, sim, slice, frame, struct(), ...
-            propToggles, sim.dz);
+            propToggles, sim.dz); % propagates the slice
     
-        EplusNext(:,:,j+1) = slice.Gau;
+        EplusNext(:,:,j+1) = slice.Gau; % fills out the updated array
     end
     
     % Advance the last right-going slice to the RHS mirror.
@@ -27,7 +27,7 @@ function [EplusNext, EminusAtRHS, outputs, sim, gain_medium] = R_3D(consts, sim,
     
     slice.Gau = Eplus(:,:,Nz); % the final slice, at the RHS of the cavity
     slice.pos = sim.z(Nz);
-    dzToMirror = mirror(1).loc - slice.pos;
+    dzToMirror = mirror(1).loc - slice.pos; % half step, +dz/2
     slice = Prop(consts, sim, slice, frame, struct(), ...
         incidentToggles, dzToMirror);
     E_incident = slice.Gau;
@@ -73,11 +73,15 @@ function [EplusNext, EminusAtRHS, outputs, sim, gain_medium] = R_3D(consts, sim,
             outputs.gain(end+1) = gain_ratio;
         end
     end
+
+    if toggles.outputs_switch
+        outputs.Gau_RHS_mirror = E_reflected; % save for comparison with 2D solver
+    end
     
-    % Return to the last cell center as a left-going field.
+    % Outermost, reflected slice becomes a left-going field
     slice.Gau = E_reflected;
     slice.pos = mirror(1).loc;
-    dzFromMirror = sim.z(Nz) - slice.pos;
+    dzFromMirror = sim.z(Nz) - slice.pos; % half step, -dz/2
     slice = Prop(consts, sim, slice, frame, struct(), ...
         propToggles, dzFromMirror);
     

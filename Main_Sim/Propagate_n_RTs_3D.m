@@ -59,6 +59,8 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
             outputs.Pminus(end+1,:) = Pminus;
             outputs.U_cavity(end+1) = sim.dt*sum(Pplus + Pminus); % energy contained within the cavity
 
+            step
+
         end
 
         % At the end of every round-trip:
@@ -76,7 +78,7 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
             outputs.P_circ_LHS = power_factor*sum(abs(E_end).^2, 'all');
 
             % Mode convergence check
-            if check_convergence && isfinite(previous_loss) && isfinite(rt_loss) && any(E_start(:)) && any(E_end) % only runs once some loss data is available
+            if check_convergence && isfinite(previous_loss) && isfinite(rt_loss) && any(E_start(:)) && any(E_end(:)) % only runs once some loss data is available
                 [converged, state] = Check_Mode_Convergence(E_start, E_end, previous_loss, rt_loss, state, toggles, sim);
                 if converged
                     break % finish simulation early
