@@ -29,11 +29,6 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
 
             [EplusNext, EminusAtRHS, outputs, gain_medium] = R_3D(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % forward-propagating field
 
-            if step == Nz && toggles.outputs_switch % save RHS mode for comparison with 2D code
-                E_rhs = outputs.Gau_RHS_mirror;
-                rhs_reflectance = outputs.R1(end);
-            end
-
             [EminusNext, EplusAtLHS, outputs] = L_3D(consts, sim, laser, frame, mirror, outputs, toggles); % backward-propagating field
 
             % Update the boundary cells
@@ -49,7 +44,7 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
 
             % The seed reaches the RHS halfway through this round trip.
             if step == Nz && toggles.outputs_switch
-                E_rhs = EminusAtRHS;
+                E_rhs = outputs.Gau_RHS_mirror; % evaluated at the mirror
                 rhs_reflectance = outputs.R1(end);
             end
 
