@@ -49,7 +49,7 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
 
             % The seed reaches the RHS halfway through this round trip.
             if step == Nz && toggles.outputs_switch
-                E_rhs = EminusAtRHS;
+                E_rhs = outputs.Gau_RHS_mirror;
                 rhs_reflectance = outputs.R1(end);
             end
 
