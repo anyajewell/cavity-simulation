@@ -33,7 +33,9 @@ function [converged, state] = Check_Mode_Convergence(E_prev, E_curr, loss_prev, 
     state.lambda_prev = lambda;
     
     % Test for loss stability
-    loss_ok = abs(loss_curr - loss_prev) < eps_loss;
+    loss_ok = abs(loss_curr - loss_prev) ...
+        / max(abs(loss_prev), eps) < eps_loss;
+
 
     if strcmp(toggles.convergence_def, 'TEM00') % has to be lowest order mode
         mode_ok = Check_Single_Lobed_Mode(E_curr, sim.X, sim.Y); % single-lobed / centered / radially-clean shape test
