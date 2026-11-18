@@ -98,7 +98,20 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     Gau = Gau_ini;
     laser.Eplus = complex(zeros(N, N, Nz, 'like', real(Gau_ini))); % forward (right) propagating field
     laser.Eminus = complex(zeros(N, N, Nz, 'like', real(Gau_ini))); % backward (left) propagating field
-    laser.Eplus(:,:,1) = Gau_ini; % seed the first cell with a right-going Gaussian
+    
+    % Propagate the mirror-defined seed to the first cell center.
+    seed = struct('Ld', laser.Ld, 'k0', laser.k0, ...
+        'Gau', Gau_ini, 'pos', mirror(2).loc);
+
+    seedToggles = toggles;
+    seedToggles.outputs_switch = false;
+    seedToggles.absorbing_mask = false; % For this absorber-free comparison
+
+    seed = Prop(consts, sim, seed, frame, struct(), ...
+        seedToggles, sim.z(1) - mirror(2).loc);
+
+    laser.Eplus(:,:,1) = seed.Gau; % seed the first cell with a right-going Gaussian
+    
     centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = []; loss_frac = []; P_circ = []; Pplus = []; Pminus = []; U_cavity = [];
