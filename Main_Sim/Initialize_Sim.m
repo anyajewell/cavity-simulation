@@ -5,7 +5,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     gain_switch = false; % gain medium present or not
     outputs_switch = true;
     videoplot_frequency = 'never'; % 'every step', 'every mirror', or 'never/none'
-    finish_line = 'convergence'; % 'convergence' or 'RTs'
+    finish_line = 'RTs'; % 'convergence' or 'RTs'
     absorbing_mask = true;
     resize_grid = false;
     convergence_def = 'general'; % 'TEM00' or 'general'
@@ -28,15 +28,15 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     sim.Lx = Lx; sim.N = N; sim.dx = dx;
     
     % Interlink frame settings
-    Omega = 0.001; % rotational velocity, [rad/sec]
-    accel = 1.0e-5; % transverse acceleration, [m/s^2]
+    Omega = 0; % rotational velocity, [rad/sec]
+    accel = 0; % transverse acceleration, [m/s^2]
     v0 = 0; % starting transverse velocity, [m/s]
     frame.Omega = Omega; frame.accel = accel; frame.v0 = v0;
     
     % Simulation settings
     L = 150e3; % cavity length, [m]
     Ld = 1064*1e-9; % Laser wavelength, [m]
-    D1 = 1;
+    %D1 = 1;
     %L = (D1/2)^2 / (N_F*Ld); % calculate cavity length from Fresnel number
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
     Nz = 10; % number of steps in one pass across the cavity (1/2 a round trip), longitudinal discretization
@@ -47,7 +47,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     t0 = 0;
     dt = abs(dz/c); % time step, [s]
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t0; sim.dt = dt; sim.z_edges = z_edges; sim.z = z; sim.tau = tau;
-    RTs = 100; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
+    RTs = 1; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
     
