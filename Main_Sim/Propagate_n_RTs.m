@@ -45,7 +45,7 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
         end
 
         % Calculate and store RT circulating power
-        outputs.P_circ(a) = sum(abs(laser.Gau(:)).^2) * sim.dx * sim.dy;
+        outputs.P_circ(a) = 0.5*consts.c*consts.eps0 * sim.dx*sim.dy*sum(abs(laser.Gau).^2, 'all');
 
         % Mode convergence check
         if a >= 2 && strcmp(toggles.finish_line, 'convergence') % only run once some loss data is available
@@ -53,8 +53,8 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
             if converged == true || a == sim.RTs % mode convergence detected or simulation over
                 outputs.Gau_RHS = Gau_RHS;
                 outputs.Gau_LHS = Gau_LHS;
-                outputs.P_circ_LHS = sum(abs(Gau_LHS(:)).^2) * sim.dx * sim.dy; % circulating power LHS mirror
-                outputs.P_circ_RHS = sum(abs(Gau_RHS(:)).^2) * sim.dx * sim.dy; % circulating power RHS mirror
+                outputs.P_circ_LHS = 0.5*consts.c*consts.eps0*sum(abs(Gau_LHS(:)).^2) * sim.dx * sim.dy; % circulating power LHS mirror
+                outputs.P_circ_RHS = 0.5*consts.c*consts.eps0*sum(abs(Gau_RHS(:)).^2) * sim.dx * sim.dy; % circulating power RHS mirror
                 break % finish propagation early (time skip)
             end
         end

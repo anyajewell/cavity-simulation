@@ -5,7 +5,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     gain_switch = false; % gain medium present or not
     outputs_switch = true;
     videoplot_frequency = 'every mirror'; % 'every step', 'every mirror', or 'never/none'
-    finish_line = 'RTs'; % 'convergence' or 'RTs'
+    finish_line = 'convergence'; % 'convergence' or 'RTs'
     absorbing_mask = true;
     resize_grid = false;
     convergence_def = 'general'; % 'TEM00' or 'general'
@@ -23,7 +23,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     
     % Grid
     Lx = 4; % Length of square transverse domain (one side), [m]
-    N = 512; % sampling number
+    N = 256; % sampling number
     dx = Lx/N; % step size 
     sim.Lx = Lx; sim.N = N; sim.dx = dx;
     
@@ -39,7 +39,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     D1 = 1;
     L = (D1/2)^2 / (N_F*Ld); % calculate cavity length from Fresnel number
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
-    Nz = 1e2; % number of steps in one pass across the cavity (1/2 a round trip)
+    Nz = 10; % number of steps in one pass across the cavity (1/2 a round trip)
     dz = L/Nz; % step size, sign determines initial direction [m]
     tau = 2*L/c; % round-trip time, [s]
     t0 = 0; t(1) = t0;
@@ -47,7 +47,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     tmax = dt*Nz; % max time, [s]
     z = linspace(Z0, L, Nz); % evaluatory locations within cavity
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z; sim.tau = tau;
-    RTs = 1; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
+    RTs = 100; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
     
@@ -92,8 +92,8 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     end
 
     P_ref = []; % to store reference power for round-trip loss calculation at RHS
-    %Pseed = 1; % choose laser seed power, [W]
-    %Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
+    Pseed = 1; % choose laser seed power, [W]
+    Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
     t0 = 0;
     t = linspace(t0,tmax,Nz); % timesteps
     Gau = Gau_ini;
