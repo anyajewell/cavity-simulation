@@ -1,7 +1,7 @@
 function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(N_F)
     
     % Settings/Toggles
-    track_centers = true;
+    track_centers = false;
     gain_switch = false; % gain medium present or not
     outputs_switch = true;
     videoplot_frequency = 'never'; % 'every step', 'every mirror', or 'never/none'
@@ -86,35 +86,6 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     [x, y, X, Y] = Create_Grid(N, Lx, dx);
     sim.x = x; sim.y = y; sim.X = X; sim.Y = Y; sim.dy = abs(sim.y(2)-sim.y(1)); sim.dx = abs(sim.x(2)-sim.x(1));
 
-    % Initialize laser
-    if strcmp(initial_profile, 'general') % initialize general gaussian beam
-        Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
-    else % initialize a cavity mode solution
-        Gau_ini = load("C:\Users\jewellan\Documents\GitHub\cavity-simulation\Cavity_Modes\150km_gain.mat").outputs.Gau_LHS;
-    end
-    P_ref = []; % to store reference power for round-trip loss calculation
-    P_seed = 1; % choose laser seed power, [W]
-    Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, P_seed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power, now laser power is physical
-    Gau = Gau_ini;
-    laser.Eplus = complex(zeros(N, N, Nz, 'like', real(Gau_ini))); % forward (right) propagating field
-    laser.Eminus = complex(zeros(N, N, Nz, 'like', real(Gau_ini))); % backward (left) propagating field
-    laser.Eplus(:,:,1) = Gau_ini; % seed the first cell with a right-going Gaussian
-    centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
-    centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
-    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = []; loss_frac = []; P_circ = []; Pplus = []; Pminus = []; U_cavity = [];
-    laser.Gau_ini = Gau_ini; laser.Gau = Gau; laser.P_ref = P_ref; laser.P_seed = P_seed;
-    if toggles.outputs_switch == true
-        outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac; outputs.P_circ = P_circ; outputs.Pplus = Pplus; outputs.Pminus = Pminus; outputs.U_cavity = U_cavity;
-        outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax; outputs.zs = zs; outputs.t = [];
-    end
-     
-    % Mirror masks: reflecting lens phase screens and clipping masks
-    rmask1 = exp(-1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS), negative sign because propagation uses positive sign convention
-    rmask2 = exp(-1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS), negative sign because propagation uses positive sign convention
-    cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
-    cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
-    mirror(1).rmask = rmask1; mirror(2).rmask = rmask2; mirror(1).cmask = cmask1; mirror(2).cmask = cmask2;
-
     % Domain masks: absorbing mask
     if toggles.absorbing_mask == true
         r = sqrt(sim.X.^2 + sim.Y.^2);
@@ -130,6 +101,43 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
         gain_medium = Initialize_Gain_Medium(sim, mirror);
     else
         gain_medium = struct();   
+    end
+
+    % Mirror masks: reflecting lens phase screens and clipping masks
+    rmask1 = exp(-1i*k0*(X.^2+Y.^2)/(Rc1)); % reflection mask mirror 1 (RHS), negative sign because propagation uses positive sign convention
+    rmask2 = exp(-1i*k0*(X.^2+Y.^2)/(Rc2)); % reflection mask mirror 2 (LHS), negative sign because propagation uses positive sign convention
+    cmask1 = (X.^2 + Y.^2 <= (D1/2)^2); % clipping mask mirror 1 (RHS)
+    cmask2 = (X.^2 + Y.^2 <= (D2/2)^2); % clipping mask mirror 2 (LHS)
+    mirror(1).rmask = rmask1; mirror(2).rmask = rmask2; mirror(1).cmask = cmask1; mirror(2).cmask = cmask2;
+
+    % Initialize laser
+    if strcmp(initial_profile, 'general') % initialize general gaussian beam
+        Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
+    else % initialize a cavity mode solution
+        Gau_ini = load("C:\Users\jewellan\Documents\GitHub\cavity-simulation\Cavity_Modes\150km.mat").outputs.Gau_LHS;
+    end
+    P_ref = []; % to store reference power for round-trip loss calculation
+    P_seed = 1; % choose laser seed power, [W]
+    Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, P_seed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power, now laser power is physical
+    laser.Gau = Gau_ini;
+    laser = Fill_Cavity(consts, sim, laser, frame, mirror, toggles, gain_medium);
+
+    % Single-plane initial condition
+    % laser.Eplus = complex(zeros(N, N, Nz, 'like', real(Gau_ini))); % forward (right) propagating field
+    % laser.Eminus = complex(zeros(N, N, Nz, 'like', real(Gau_ini))); % backward (left) propagating field
+    % laser.Eplus(:,:,1) = Gau_ini; % seed the first cell with a right-going Gaussian
+
+    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = []; loss_frac = []; P_circ = []; Pplus = []; Pminus = []; U_cavity = [];
+    laser.Gau_ini = Gau_ini; laser.P_ref = P_ref; laser.P_seed = P_seed;
+    if toggles.outputs_switch == true
+        outputs.loss_frac = loss_frac; outputs.P_circ = P_circ; outputs.Pplus = Pplus; outputs.Pminus = Pminus; outputs.U_cavity = U_cavity;
+        outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax; outputs.zs = zs; outputs.t = [];
+    end
+
+    if toggles.track_centers == true
+        centerx(1) = trapz(trapz(X.*abs(Eseed).^2))/trapz(trapz(abs(Eseed).^2));
+        centery(1) = trapz(trapz(Y.*abs(Eseed).^2))/trapz(trapz(abs(Eseed).^2));
+        outputs.centerx = centerx; outputs.centery = centery; 
     end
     
     % Resize grid
