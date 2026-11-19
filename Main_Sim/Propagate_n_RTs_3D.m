@@ -17,6 +17,10 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
     outputs.Pminus = power_factor*reshape( ...
         sum(sum(abs(laser.Eminus).^2, 1), 2), 1, []);
 
+    % Set up and start video
+    [video, frameStride, fig, layout, sliceSurfaces, ix, iy, sliceIndices, intensityFactor] = Set_Up_3D_Video(sim,consts,laser);
+    Write_Cavity_Frame(video, fig, layout, sliceSurfaces, laser, ix, iy, sliceIndices, intensityFactor, sim.t);
+
     % Outer Loop:
     for a = 1:sim.RTs % go for the prescribed number of round-trips
 
@@ -59,7 +63,9 @@ function [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, la
             outputs.Pminus(end+1,:) = Pminus;
             outputs.U_cavity(end+1) = sim.dt*sum(Pplus + Pminus); % energy contained within the cavity
 
-            step
+            if mod(step, frameStride) == 0
+                Write_Cavity_Frame(video, fig, layout, sliceSurfaces, laser, ix, iy, sliceIndices, intensityFactor, sim.t);
+            end
 
         end
 
