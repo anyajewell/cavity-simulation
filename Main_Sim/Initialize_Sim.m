@@ -4,7 +4,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     track_centers = true;
     gain_switch = false; % gain medium present or not
     outputs_switch = true;
-    videoplot_frequency = 'never'; % 'every step', 'every mirror', or 'never/none'
+    videoplot_frequency = 'every mirror'; % 'every step', 'every mirror', or 'never/none'
     finish_line = 'RTs'; % 'convergence' or 'RTs'
     absorbing_mask = true;
     resize_grid = false;
@@ -39,14 +39,14 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     %D1 = 1;
     %L = (D1/2)^2 / (N_F*Ld); % calculate cavity length from Fresnel number
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
-    Nz = 10; % number of steps in one pass across the cavity (1/2 a round trip), longitudinal discretization
+    Nz = 10; % number of steps in one pass across the cavity (1/2 a round trip)
     dz = L/Nz; % step size, sign determines initial direction [m]
-    z_edges = Z0 + (0:Nz)*dz; % from -L/2 to +L/2
-    z = Z0 + ((1:Nz) - 0.5)*dz; % cell centers, field-defined locations within the cavity
     tau = 2*L/c; % round-trip time, [s]
-    t0 = 0;
+    t0 = 0; t(1) = t0;
     dt = abs(dz/c); % time step, [s]
-    sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t0; sim.dt = dt; sim.z_edges = z_edges; sim.z = z; sim.tau = tau;
+    tmax = dt*Nz; % max time, [s]
+    z = linspace(Z0, L, Nz); % evaluatory locations within cavity
+    sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z; sim.tau = tau;
     RTs = 1; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
@@ -61,7 +61,6 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     loc2 = -L/2; % location of mirror 2, LHS of cavity [m]
     dtheta_x = 0; dtheta_y = 0; % intial mirror misalignment, [rad]
     mirror(1).D = D1; mirror(2).D = D2; mirror(1).Rc = Rc1; mirror(2).Rc = Rc2; mirror(1).loc = loc1; mirror(2).loc = loc2; mirror(1).dtheta_x = dtheta_x; mirror(1).dtheta_y = dtheta_y;
-    mirror(2).dtheta_x = dtheta_x; mirror(2).dtheta_y = dtheta_y;
     
     % Initial laser conditions
     Ld = 1064*1e-9; % Laser wavelength, [m]
@@ -88,24 +87,23 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
 
     if strcmp(initial_profile, 'general') % initialize general gaussian beam
         Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
-    else % initialize a cavity mode solution
+    else
         Gau_ini = load("C:\Users\jewellan\Documents\GitHub\cavity-simulation\Cavity_Modes\150km_gain.mat").outputs.Gau_LHS;
     end
 
-    P_ref = []; % to store reference power for round-trip loss calculation
-    P_seed = 1; % choose laser seed power, [W]
-    Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, P_seed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power, now laser power is physical
+    P_ref = []; % to store reference power for round-trip loss calculation at RHS
+    Pseed = 1; % choose laser seed power, [W]
+    Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, Pseed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power
+    t0 = 0;
+    t = linspace(t0,tmax,Nz); % timesteps
     Gau = Gau_ini;
-    laser.Eplus = complex(zeros(N, N, Nz, 'like', real(Gau_ini))); % forward (right) propagating field
-    laser.Eminus = complex(zeros(N, N, Nz, 'like', real(Gau_ini))); % backward (left) propagating field
-    laser.Eplus(:,:,1) = Gau_ini; % seed the first cell with a right-going Gaussian
     centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
-    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = []; loss_frac = []; P_circ = []; Pplus = []; Pminus = []; U_cavity = [];
-    laser.Gau_ini = Gau_ini; laser.Gau = Gau; laser.P_ref = P_ref; laser.P_seed = P_seed;
+    loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = []; loss_frac = [];
+    laser.Gau_ini = Gau_ini; laser.Gau = Gau; laser.P_ref = P_ref;
     if toggles.outputs_switch == true
-        outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac; outputs.P_circ = P_circ; outputs.Pplus = Pplus; outputs.Pminus = Pminus; outputs.U_cavity = U_cavity;
-        outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax; outputs.zs = zs; outputs.t = [];
+        outputs.centerx = centerx; outputs.centery = centery; outputs.loss_frac = loss_frac;
+        outputs.loss1 = loss1; outputs.loss2 = loss2; outputs.R1 = R1; outputs.R2 = R2; outputs.gain = gain; outputs.Imax = Imax; outputs.zs = zs;
     end
      
     % Mirror masks: reflecting lens phase screens and clipping masks
@@ -125,14 +123,12 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
         sim.mask_abs(idx) = exp(-((r(idx)-r0)/w).^8); % steep super-Gaussian
     end
 
-    % Gain medium
     if toggles.gain_switch == true
         gain_medium = Initialize_Gain_Medium(sim, mirror);
     else
         gain_medium = struct();   
     end
-    
-    % Resize grid
+        
     if toggles.resize_grid == true
         sim.grid0.N = sim.N;
         sim.grid0.dx = sim.dx;
