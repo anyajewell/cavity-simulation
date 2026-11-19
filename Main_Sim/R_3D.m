@@ -1,12 +1,14 @@
 function [EplusNext, EminusAtRHS, outputs, gain_medium] = R_3D(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium)        
 
     Nz = sim.Nz;
-    mirror(1) = mirror(1);
+    z = sim.z;
+    dz = sim.dz;
     Eplus = laser.Eplus;
     EplusNext = zeros(size(Eplus), 'like', Eplus);
     
     slice = struct('Ld', laser.Ld, 'k0', laser.k0, ...
         'Gau', [], 'pos', []);
+    slice_template = slice;
     
     % Record one set of mirror diagnostics per time step:
     propToggles = toggles;
@@ -14,12 +16,11 @@ function [EplusNext, EminusAtRHS, outputs, gain_medium] = R_3D(consts, sim, lase
     
     % Advance each interior slice one cell to the right:
     for j = 1:Nz-1
-        slice.Gau = Eplus(:,:,j); % picks out the longitudinal cell
-        slice.pos = sim.z(j); % corresponding position
-        slice = Prop(consts, sim, slice, frame, struct(), ...
-            propToggles, sim.dz); % propagates the slice
-    
-        EplusNext(:,:,j+1) = slice.Gau; % fills out the updated array
+        local_slice = slice_template;
+        local_slice.Gau = Eplus(:,:,j); % picks out the longitudinal cell
+        local_slice.pos = z(j); % corresponding position
+        local_slice = Prop(consts, sim, local_slice, frame, struct(), propToggles, dz); % propagates the slice
+        EplusNext(:,:,j+1) = local_slice.Gau; % fills out the updated array
     end
     
     % Advance the last right-going slice to the RHS mirror.

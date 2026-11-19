@@ -16,8 +16,13 @@ path = "C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Cavity_Modes"; f
 
 [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(1); % initialize
 %% Propagate
+
+profile on
+
 [laser, outputs, gain_medium, sim] = Propagate_n_RTs_3D(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % propagate # of desired RTs
 
+profile off
+profile viewer
 %% Post-Processing
 
 figure;
