@@ -41,7 +41,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     Z0 = -L/2; % starting location, arbitrary, anywhere within the cavity [m]
     Nz = 10; % number of steps in one pass across the cavity (1/2 a round trip), longitudinal discretization
     dz = L/Nz; % step size, sign determines initial direction [m]
-    z_edges = Z0 + (0:Nz)*dz; % from -L/2 to +L/2
+    z_edges = Z0 + (0:Nz)*dz; % edges of longitudinal grid, from -L/2 to +L/2
     z = Z0 + ((1:Nz) - 0.5)*dz; % cell centers, field-defined locations within the cavity
     tau = 2*L/c; % round-trip time, [s]
     t0 = 0;
@@ -86,12 +86,12 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     [x, y, X, Y] = Create_Grid(N, Lx, dx);
     sim.x = x; sim.y = y; sim.X = X; sim.Y = Y; sim.dy = abs(sim.y(2)-sim.y(1)); sim.dx = abs(sim.x(2)-sim.x(1));
 
+    % Initialize laser
     if strcmp(initial_profile, 'general') % initialize general gaussian beam
         Gau_ini = (1/(w0*pi*0.5))*exp(-(X.^2+Y.^2)./(w0^2));
     else % initialize a cavity mode solution
         Gau_ini = load("C:\Users\jewellan\Documents\GitHub\cavity-simulation\Cavity_Modes\150km_gain.mat").outputs.Gau_LHS;
     end
-
     P_ref = []; % to store reference power for round-trip loss calculation
     P_seed = 1; % choose laser seed power, [W]
     Gau_ini = Normalize_Laser_Field_To_Power(Gau_ini, P_seed, sim.dx, sim.dx, consts.c, consts.eps0); % scale profile to laser power, now laser power is physical
@@ -99,7 +99,6 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     laser.Eplus = complex(zeros(N, N, Nz, 'like', real(Gau_ini))); % forward (right) propagating field
     laser.Eminus = complex(zeros(N, N, Nz, 'like', real(Gau_ini))); % backward (left) propagating field
     laser.Eplus(:,:,1) = Gau_ini; % seed the first cell with a right-going Gaussian
-    
     centerx(1) = trapz(trapz(X.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     centery(1) = trapz(trapz(Y.*abs(Gau).^2))/trapz(trapz(abs(Gau).^2));
     loss1 = []; loss2 = []; R1 = []; R2 = []; gain = []; Imax = []; zs = []; loss_frac = []; P_circ = []; Pplus = []; Pminus = []; U_cavity = [];

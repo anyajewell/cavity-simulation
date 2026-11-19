@@ -1,4 +1,4 @@
-function [EplusNext, EminusAtRHS, outputs, sim, gain_medium] = R_3D(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium)        
+function [EplusNext, EminusAtRHS, outputs, gain_medium] = R_3D(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium)        
 
     Nz = sim.Nz;
     mirror(1) = mirror(1);
