@@ -1,15 +1,15 @@
 function [video, frameStride, fig, layout, sliceSurfaces, ix, iy, sliceIndices, intensityFactor] = Set_Up_3D_Video(sim, consts, laser)
 
-    % Transverse crop around the optical axis.
+    % Transverse crop around the optical axis
     ix = find(abs(sim.X(1,:)) <= 1);
     iy = find(abs(sim.Y(:,1)) <= 1);
     x = sim.X(1,ix);
     y = sim.Y(iy,1);
     [Xslice, Yslice] = meshgrid(x, y);
     
-    % Select the cell centers nearest five evenly spaced positions.
+    % Set up however many slices you want to see
     z = sim.z(:);
-    zTargets = linspace(z(1), z(end), 5);
+    zTargets = linspace(z(1), z(end), 10);
     [~, sliceIndices] = min(abs(z - zTargets), [], 1);
     sliceIndices = unique(sliceIndices, 'stable');
     zSlice_km = z(sliceIndices) / 1e3;
@@ -72,8 +72,8 @@ function [video, frameStride, fig, layout, sliceSurfaces, ix, iy, sliceIndices, 
         ax.Title.Color = 'k';
 
         % White grid lines against the dark cavity walls
-        ax.Color = [0.08 0.08 0.08];
-        ax.GridColor = [1 1 1];
+        ax.Color = 'w'; % White floor and walls
+        ax.GridColor = [0.82 0.82 0.82]; % Light gray lines visible on white
         ax.GridAlpha = 1;
     end
     

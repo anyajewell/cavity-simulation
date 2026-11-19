@@ -47,7 +47,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     t0 = 0;
     dt = abs(dz/c); % time step, [s]
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t0; sim.dt = dt; sim.z_edges = z_edges; sim.z = z; sim.tau = tau;
-    RTs = 1; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
+    RTs = 100; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
     
