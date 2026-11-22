@@ -3,6 +3,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     % Settings/Toggles
     track_centers = false;
     gain_switch = false; % gain medium present or not
+    gain_type = 'basic'; % 'basic' or 'complex'
     outputs_switch = true;
     videoplot_frequency = 'never'; % 'every step', 'every mirror', or 'never/none'
     finish_line = 'RTs'; % 'convergence' or 'RTs'
@@ -19,7 +20,8 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     % Constants
     c = 3e8; % [m/s]
     eps0 = (1/(36*pi))*10^(-9); % vacuum permittivity, [F/m]
-    consts.c = c; consts.eps0 = eps0;
+    h = 6.62607015e-34; % Planck's constant
+    consts.c = c; consts.eps0 = eps0; consts.h = h;
     
     % Grid
     Lx = 4; % Length of square transverse domain (one side), [m]
@@ -98,7 +100,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
 
     % Gain medium
     if toggles.gain_switch == true
-        gain_medium = Initialize_Gain_Medium(sim, mirror);
+        gain_medium = Initialize_Gain_Medium(sim, mirror, gain_type);
     else
         gain_medium = struct();   
     end
