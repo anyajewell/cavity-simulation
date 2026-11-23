@@ -1,11 +1,12 @@
-function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(N_F)
+function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(N_F, Omega)
     
     % Settings/Toggles
     track_centers = true;
     gain_switch = false; % gain medium present or not
     outputs_switch = true;
+    video_switch = false;
     videoplot_frequency = 'every mirror'; % 'every step', 'every mirror', or 'never/none'
-    finish_line = 'RTs'; % 'convergence' or 'RTs'
+    finish_line = 'convergence'; % 'convergence' or 'RTs'
     absorbing_mask = true;
     resize_grid = false;
     convergence_def = 'general'; % 'TEM00' or 'general'
@@ -13,7 +14,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     %save_location = 'local'; % 'local' or 'git'
     toggles.track_centers = track_centers; toggles.gain_switch = gain_switch; toggles.outputs_switch = outputs_switch; 
     toggles.videoplot_frequency = videoplot_frequency; toggles.finish_line = finish_line; toggles.absorbing_mask = absorbing_mask;
-    toggles.resize_grid = resize_grid; toggles.convergence_def = convergence_def; toggles.initial_profile = initial_profile;
+    toggles.resize_grid = resize_grid; toggles.convergence_def = convergence_def; toggles.initial_profile = initial_profile; toggles.video_switch = video_switch;
     %toggles.save_location = save_location;
 
     % Constants
@@ -23,12 +24,12 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     
     % Grid
     Lx = 4; % Length of square transverse domain (one side), [m]
-    N = 256; % sampling number
+    N = 512; % sampling number
     dx = Lx/N; % step size 
     sim.Lx = Lx; sim.N = N; sim.dx = dx;
     
     % Interlink frame settings
-    Omega = 0; % rotational velocity, [rad/sec]
+    %Omega = 0.001; % rotational velocity, [rad/sec]
     accel = 0; % transverse acceleration, [m/s^2]
     v0 = 0; % starting transverse velocity, [m/s]
     frame.Omega = Omega; frame.accel = accel; frame.v0 = v0;
@@ -45,9 +46,9 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     t0 = 0; t(1) = t0;
     dt = abs(dz/c); % time step, [s]
     tmax = dt*Nz; % max time, [s]
-    z = linspace(Z0, L, Nz); % evaluatory locations within cavity
+    z = linspace(Z0, L/2, Nz); % evaluatory locations within cavity
     sim.Z0 = Z0; sim.L = L; sim.Nz = Nz; sim.dz = dz; sim.t0 = t0; sim.t = t; sim.dt = dt; sim.tmax = tmax; sim.z = z; sim.tau = tau;
-    RTs = 1; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
+    RTs = 1000; % number of round trips to take, user set (represents a max if finish_line 'convergence' is on)
     %RTs = Set_Max_RTs(sim, consts, sampling_time); % to be used with PCAC
     sim.RTs = RTs;
     
@@ -73,10 +74,14 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     laser.Ld = Ld; laser.w0 = w0; laser.k0 = k0; laser.zr = zr; laser.wz = wz; laser.theta_D = theta_D; laser.N_F = N_F; laser.pos = Z0;
 
     % Set up video
-    videoname = sprintf('Omega=%.3f_accel=%.2e_L=%.0f_D=%.2f_RTs=%.0f.mp4', Omega, accel, L, D1, RTs);
-    if toggles.outputs_switch == true
-        [saveFolder, v] = Set_Up_Video(videoname);
-        outputs.saveFolder = saveFolder; outputs.v = v;
+    if video_switch == true
+        videoname = sprintf('Omega=%.3f_accel=%.2e_L=%.0f_D=%.2f_RTs=%.0f.mp4', Omega, accel, L, D1, RTs);
+        if toggles.outputs_switch == true
+            [saveFolder, v] = Set_Up_Video(videoname);
+            outputs.saveFolder = saveFolder; outputs.v = v;
+        else
+            outputs = struct();
+        end
     else
         outputs = struct();
     end
