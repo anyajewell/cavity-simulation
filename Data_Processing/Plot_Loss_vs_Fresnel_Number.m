@@ -3,11 +3,11 @@ clc;
 close all;
 
 % Base directory
-base_folder = 'C:\Users\jewellan\Documents\GitHub\cavity-simulation\Results\SciTech_Data';
+base_folder = 'C:\Users\jewellan\Documents\GitHub\cavity-simulation\Results\SciTech_Data\Fresnel_Omega_Study';
 
 % Sweep parameters
 NF_list = 0.1:0.1:1.0;
-Omega_list = 0.001:0.001:0.01;
+Omega_list = 0:0.001:0.01;
 
 % Preallocate loss matrix
 % Rows = Omega values, Columns = Fresnel numbers
