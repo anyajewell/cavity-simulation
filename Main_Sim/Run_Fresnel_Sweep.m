@@ -3,7 +3,7 @@ clc;
 close all;
 
 NF_list = 0.1:0.1:1.0;
-Omega_list = 0.001:0.001:0.01;
+Omega_list = 0;
 total_cases = numel(NF_list) * numel(Omega_list);
 
 base_folder = 'C:\Users\jewellan\Documents\GitHub\cavity-simulation\Results\SciTech_Data';
