@@ -14,7 +14,7 @@ path = "C:\Users\Anya Jewell\Documents\GitHub\cavity-simulation\Cavity_Modes"; f
 
 %% Propagation by # of RTs
 
-[consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(1, 0.001); % initialize
+[consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = Initialize_Sim(1, 0); % initialize
 %%
 if laser.pos ~= mirror(1).loc && laser.pos ~= mirror(2).loc % wavefront is starting within the cavity
     if sim.dz > 0 % wavefront moving right
@@ -40,17 +40,17 @@ Plot_Results_vs_Analytic(outputs.centerx, x_ana, outputs.zs)
 % savefig(fig1, fullfile(outputs.saveFolder,'RT_Loss.fig'));
 % exportgraphics(fig1, fullfile(outputs.saveFolder,'RT_Loss.png'), 'Resolution',300);
 
-fig2 = Plot_Center(outputs.centerx, outputs.zs);
-savefig(fig2, fullfile(outputs.saveFolder,'Center_vs_z.fig'));
-exportgraphics(fig2, fullfile(outputs.saveFolder,'Center_vs_z.png'), 'Resolution',300);
-
-fig3 = Plot_R(outputs.R1, outputs.R2, outputs.zs, sim.L);
-savefig(fig3, fullfile(outputs.saveFolder,'Reflection.fig'));
-exportgraphics(fig3, fullfile(outputs.saveFolder,'Reflection.png'), 'Resolution',300);
-
-fig4 = Plot_Mirror_Loss(outputs.loss1, outputs.loss2, outputs.zs, sim.L);
-savefig(fig4, fullfile(outputs.saveFolder,'Mirror_Loss.fig'));
-exportgraphics(fig4, fullfile(outputs.saveFolder,'Mirror_Loss.png'), 'Resolution',300);
+% fig2 = Plot_Center(outputs.centerx, outputs.zs);
+% savefig(fig2, fullfile(outputs.saveFolder,'Center_vs_z.fig'));
+% exportgraphics(fig2, fullfile(outputs.saveFolder,'Center_vs_z.png'), 'Resolution',300);
+% 
+% fig3 = Plot_R(outputs.R1, outputs.R2, outputs.zs, sim.L);
+% savefig(fig3, fullfile(outputs.saveFolder,'Reflection.fig'));
+% exportgraphics(fig3, fullfile(outputs.saveFolder,'Reflection.png'), 'Resolution',300);
+% 
+% fig4 = Plot_Mirror_Loss(outputs.loss1, outputs.loss2, outputs.zs, sim.L);
+% savefig(fig4, fullfile(outputs.saveFolder,'Mirror_Loss.fig'));
+% exportgraphics(fig4, fullfile(outputs.saveFolder,'Mirror_Loss.png'), 'Resolution',300);
 
 % fig5 = Plot_Imax_vs_Isat(outputs, gain_medium.I_sat, sim);
 % savefig(fig5, fullfile(outputs.saveFolder,'Imax.fig'));
