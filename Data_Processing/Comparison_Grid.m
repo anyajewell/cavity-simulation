@@ -14,7 +14,7 @@ if ~exist(save_folder, 'dir')
 end
 
 NF_list = 0.1:0.1:1.0;
-Omega_list = 0.001:0.001:0.01;
+Omega_list = [0, 0.02, 0.04, 0.06, 0.08];
 
 nNF = numel(NF_list);
 nOmega = numel(Omega_list);
@@ -165,7 +165,7 @@ for i = 1:nNF
     end
 
     sgtitle(sprintf( ...
-        'Converged cavity modes | N_F = %.1f | Varying rotation rate', ...
+        'Cavity modes | N_F = %.1f | Varying rotation rate', ...
         N_F), 'FontSize', 16, 'FontWeight', 'bold');
 
     filename = sprintf('Fixed_NF_%0.1f', N_F);

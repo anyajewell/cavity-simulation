@@ -2,7 +2,7 @@ function [consts, sim, laser, frame, mirror, outputs, toggles, gain_medium] = In
     
     % Settings/Toggles
     track_centers = true;
-    gain_switch = false; % gain medium present or not
+    gain_switch = true; % gain medium present or not
     outputs_switch = true;
     video_switch = false;
     videoplot_frequency = 'every mirror'; % 'every step', 'every mirror', or 'never/none'

@@ -7,7 +7,7 @@ base_folder = 'C:\Users\jewellan\Documents\GitHub\cavity-simulation\Results\SciT
 
 % Sweep parameters
 NF_list = 0.1:0.1:1.0;
-Omega_list = 0;
+Omega_list = 0.02:0.01:0.1;
 
 total_cases = numel(NF_list)*numel(Omega_list);
 

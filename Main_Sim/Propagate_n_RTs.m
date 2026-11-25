@@ -6,6 +6,8 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
 
         laser.Gau_a = laser.Gau; % beam profile at the start of this round trip (RT)
 
+        P_RT_start = 0.5*consts.c*consts.eps0*sum(abs(laser.Gau(:)).^2) * sim.dx * sim.dy; % power at start of RT
+
         if sim.dz > 0 % laser traveling L --> R
             [laser, outputs, sim] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling right first
             Gau_RHS = laser.Gau; % profile at mirror 1
@@ -38,10 +40,14 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
 
         end % One RT complete
         
+        P_RT_end = 0.5*consts.c*consts.eps0*sum(abs(laser.Gau(:)).^2) * sim.dx * sim.dy; % power at start of RT
+
         % Calculate and store RT loss
         if toggles.outputs_switch == true 
             loss_a = 1 - (1-outputs.loss2(end))*(1-outputs.loss1(end)); % round-trip loss
             outputs.loss_frac(a) = loss_a;
+            G_RT_a = P_RT_end / P_RT_start;
+            outputs.G_RT_a = G_RT_a; % round-trip power multiplication, if = 1, gain compensates for losses
         end
 
         % Calculate and store RT circulating power

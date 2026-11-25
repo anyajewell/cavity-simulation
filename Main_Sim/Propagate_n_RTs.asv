@@ -12,12 +12,12 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
             if a == 1 && toggles.resize_grid == true
                 [sim, laser, mirror, gain_medium] = Decrease_To_Grid0_Centroid(sim, laser, mirror, outputs, toggles);
             end
-            if toggles.outputs_switch == true && video_switch = true && strcmp(toggles.videoplot_frequency, 'every mirror')
+            if toggles.outputs_switch == true && toggles.video_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);
             end
             [laser, outputs, sim] = L(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling left
             Gau_LHS = laser.Gau; % profile at mirror 2
-            if toggles.outputs_switch == true && video_switch = true && strcmp(toggles.videoplot_frequency, 'every mirror')
+            if toggles.outputs_switch == true && toggles.video_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);
             end
             
@@ -27,19 +27,19 @@ function [laser, outputs, gain_medium] = Propagate_n_RTs(consts, sim, laser, fra
             if a == 1 && toggles.resize_grid == true
                 [sim, laser, mirror, gain_medium] = Decrease_To_Grid0_Centroid(sim, laser, mirror, outputs, toggles);
             end
-            if toggles.outputs_switch == true && video_switch = true && strcmp(toggles.videoplot_frequency, 'every mirror')
+            if toggles.outputs_switch == true && toggles.video_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);
             end
             [laser, outputs, sim] = R(consts, sim, laser, frame, mirror, outputs, toggles, gain_medium); % traveling right
             Gau_RHS = laser.Gau; % profile at mirror 1
-            if toggles.outputs_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
+            if toggles.outputs_switch == true && toggles.video_switch == true && strcmp(toggles.videoplot_frequency, 'every mirror')
                 outputs = Write_Video_Frame(sim, laser, toggles, outputs);
             end
 
         end % One RT complete
         
         % Calculate and store RT loss
-        if outputs_switch == true 
+        if toggles.outputs_switch == true 
             loss_a = 1 - (1-outputs.loss2(end))*(1-outputs.loss1(end)); % round-trip loss
             outputs.loss_frac(a) = loss_a;
         end

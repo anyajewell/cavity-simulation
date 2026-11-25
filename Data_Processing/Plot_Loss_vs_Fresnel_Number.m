@@ -8,6 +8,9 @@ base_folder = 'C:\Users\jewellan\Documents\GitHub\cavity-simulation\Results\SciT
 % Sweep parameters
 NF_list = 0.1:0.1:1.0;
 Omega_list = 0:0.001:0.01;
+Omega_list2 = 0.02:0.01:0.1;
+
+Omega_list = [Omega_list, Omega_list2];
 
 % Preallocate loss matrix
 % Rows = Omega values, Columns = Fresnel numbers
@@ -55,21 +58,48 @@ end
 
 %% Plot loss versus Fresnel number
 
-figure('Color', 'w');
+figure('Color', 'w', 'Position', [100 100 900 600]);
 hold on;
 
-colors = lines(length(Omega_list));
+% Continuous colormap for Omega
+cmap = turbo(256);
+colormap(cmap);
 
+Omega_min = min(Omega_list);
+Omega_max = max(Omega_list);
+
+% Map each Omega to its corresponding color
 for a = 1:length(Omega_list)
 
+    Omega = Omega_list(a);
+
+    % Normalize Omega to [0, 1]
+    normalized_Omega = (Omega - Omega_min) / (Omega_max - Omega_min);
+
+    % Convert to colormap index
+    color_idx = round(normalized_Omega * 255) + 1;
+    color = cmap(color_idx, :);
+
+    % Plot
     semilogy(NF_list, loss_matrix(a,:), ...
         '-o', ...
-        'Color', colors(a,:), ...
+        'Color', color, ...
         'LineWidth', 1.8, ...
         'MarkerSize', 4, ...
-        'DisplayName', sprintf('\\Omega = %.3f rad/s', Omega_list(a)));
+        'MarkerFaceColor', color);
 
 end
+
+% Colorbar
+
+clim([Omega_min Omega_max]);
+
+cb = colorbar;
+cb.Label.String = '\Omega [rad/s]';
+cb.Label.FontSize = 12;
+cb.FontSize = 11;
+
+% Formatting
 
 xlabel('N_F', 'FontSize', 12);
 ylabel('Loss / round-trip (%)', 'FontSize', 12);
@@ -78,16 +108,15 @@ title({'Fresnel number versus loss per round-trip', ...
        'for varying rotation rates'}, ...
        'FontSize', 13);
 
-legend('Location', 'best', 'FontSize', 9);
-
 grid on;
 grid minor;
 box on;
 
-set(gca, 'FontSize', 11);
-set(gca, 'YScale', 'log');
+set(gca, 'FontSize', 11, 'YScale', 'log');
 
 xlim([min(NF_list), max(NF_list)]);
+
+hold off;
 
 %% Save combined figure
 
